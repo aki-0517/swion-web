@@ -1,0 +1,365 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { Fish, Plant, Decoration } from "@/components/tank-objects"
+import { Save, TrendingUp } from "lucide-react"
+
+interface FishTankProps {
+  walletAddress: string
+  isOwner: boolean
+}
+
+export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
+  const [objects, setObjects] = useState<any[]>([])
+  const [hasChanges, setHasChanges] = useState(false)
+  const { toast } = useToast()
+
+  // Add tank rank state
+  const [tankRank, setTankRank] = useState(1)
+  const [txCount, setTxCount] = useState(0)
+  const [canUpgrade, setCanUpgrade] = useState(false)
+
+  // Simulate loading tank objects and transaction count
+  useEffect(() => {
+    if (walletAddress) {
+      // Mock data - in a real app, this would come from the blockchain
+      setObjects([
+        { id: 1, type: "fish", x: 30, y: 40, color: "orange" },
+        { id: 2, type: "plant", x: 70, y: 80, color: "green" },
+        { id: 3, type: "decoration", x: 50, y: 60, name: "castle" },
+      ])
+
+      // Simulate transaction count
+      const mockTxCount = Math.floor(Math.random() * 50) + 5
+      setTxCount(mockTxCount)
+
+      // Calculate rank based on tx count
+      const newRank = Math.floor(mockTxCount / 10) + 1
+      setTankRank(newRank)
+
+      // Check if can upgrade
+      setCanUpgrade(mockTxCount >= newRank * 10 && newRank < 5)
+    } else {
+      setObjects([])
+      setTxCount(0)
+      setTankRank(1)
+      setCanUpgrade(false)
+    }
+  }, [walletAddress])
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+
+    if (!isOwner) {
+      toast({
+        title: "Error",
+        description: "This is someone else's tank.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const objectData = JSON.parse(e.dataTransfer.getData("application/json"))
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width) * 100
+    const y = ((e.clientY - rect.top) / rect.height) * 100
+
+    setObjects([...objects, { ...objectData, x, y }])
+    setHasChanges(true)
+
+    toast({
+      title: "Placement Complete",
+      description: `Placed ${objectData.name || objectData.type}`,
+    })
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleObjectMove = (id: number, newX: number, newY: number) => {
+    if (!isOwner) return
+
+    setObjects(objects.map((obj) => (obj.id === id ? { ...obj, x: newX, y: newY } : obj)))
+    setHasChanges(true)
+  }
+
+  const handleSave = () => {
+    // In a real app, this would save to the blockchain
+    toast({
+      title: "Tank Saved",
+      description: "Your tank layout has been saved",
+    })
+    setHasChanges(false)
+  }
+
+  const handleUpgrade = () => {
+    if (canUpgrade) {
+      const newRank = tankRank + 1
+      setTankRank(newRank)
+      setCanUpgrade(false)
+
+      toast({
+        title: "Tank Upgraded!",
+        description: `Your tank is now Rank ${newRank}. New decorations unlocked!`,
+      })
+    }
+  }
+
+  // Calculate progress to next rank
+  const progressToNextRank = Math.min(100, ((txCount % 10) / 10) * 100)
+  const txToNextRank = 10 - (txCount % 10)
+
+  return (
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="pixel-container p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="pixel-text text-xl">{walletAddress ? `${walletAddress}'s Tank` : "Display Tank"}</h2>
+
+          <div className="flex items-center gap-2">
+            {hasChanges && isOwner && (
+              <button onClick={handleSave} className="game-button px-4 py-1 flex items-center gap-1">
+                <Save size={16} />
+                <span>Save Layout</span>
+              </button>
+            )}
+
+            {walletAddress && (
+              <div className="flex items-center">
+                <div className="bg-gray-200 border-2 border-black p-1 flex items-center">
+                  <div className="pixel-text text-xs mr-2">Rank {tankRank}</div>
+                  <div className="w-24 h-4 bg-gray-300 border border-black">
+                    <div className="h-full bg-blue-500" style={{ width: `${progressToNextRank}%` }}></div>
+                  </div>
+                  {canUpgrade ? (
+                    <button
+                      onClick={handleUpgrade}
+                      className="game-button ml-2 px-2 py-1 flex items-center gap-1 bg-green-500"
+                    >
+                      <TrendingUp size={12} />
+                      <span className="text-xs">Upgrade</span>
+                    </button>
+                  ) : (
+                    <div className="ml-2 text-xs">{txToNextRank} TX to next rank</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          className={`fish-tank water-animation w-full h-[400px] relative rank-${tankRank}`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+        >
+          {/* Underwater background elements - enhanced based on rank */}
+          {walletAddress && (
+            <>
+              <div className={`underwater-bg rank-${tankRank}`}></div>
+
+              {/* More decorations based on rank */}
+              <div className="underwater-plant" style={{ left: "10%" }}></div>
+              <div className="underwater-plant" style={{ left: "25%", height: "24px" }}></div>
+              <div className="underwater-rock" style={{ left: "40%" }}></div>
+              <div className="underwater-plant" style={{ left: "60%" }}></div>
+              <div className="underwater-rock" style={{ left: "75%" }}></div>
+              <div className="underwater-plant" style={{ left: "85%", height: "28px" }}></div>
+
+              {tankRank >= 2 && (
+                <>
+                  <div className="underwater-plant" style={{ left: "15%", height: "32px" }}></div>
+                  <div className="underwater-rock" style={{ left: "30%", width: "32px" }}></div>
+                </>
+              )}
+
+              {tankRank >= 3 && (
+                <>
+                  <div className="underwater-plant" style={{ left: "50%", height: "36px" }}></div>
+                  <div className="underwater-rock" style={{ left: "65%", width: "28px" }}></div>
+                  <div className="pixel-text text-xs absolute" style={{ left: "20%", top: "30%" }}>
+                    ✨
+                  </div>
+                </>
+              )}
+
+              {tankRank >= 4 && (
+                <>
+                  <div className="pixel-text text-xs absolute" style={{ left: "40%", top: "20%" }}>
+                    💎
+                  </div>
+                  <div className="pixel-text text-xs absolute" style={{ left: "70%", top: "40%" }}>
+                    🌟
+                  </div>
+                </>
+              )}
+
+              {tankRank >= 5 && (
+                <>
+                  <div className="pixel-text text-xs absolute" style={{ left: "30%", top: "15%" }}>
+                    👑
+                  </div>
+                  <div className="pixel-text text-xs absolute" style={{ left: "60%", top: "25%" }}>
+                    🏆
+                  </div>
+                  <div className="pixel-text text-xs absolute" style={{ left: "80%", top: "35%" }}>
+                    💫
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {objects.map((obj) => {
+            if (obj.type === "fish") {
+              return (
+                <DraggableObject
+                  key={obj.id}
+                  id={obj.id}
+                  x={obj.x}
+                  y={obj.y}
+                  isOwner={isOwner}
+                  onMove={handleObjectMove}
+                >
+                  <Fish color={obj.color} x={0} y={0} />
+                </DraggableObject>
+              )
+            } else if (obj.type === "plant") {
+              return (
+                <DraggableObject
+                  key={obj.id}
+                  id={obj.id}
+                  x={obj.x}
+                  y={obj.y}
+                  isOwner={isOwner}
+                  onMove={handleObjectMove}
+                >
+                  <Plant color={obj.color} x={0} y={0} />
+                </DraggableObject>
+              )
+            } else if (obj.type === "decoration") {
+              return (
+                <DraggableObject
+                  key={obj.id}
+                  id={obj.id}
+                  x={obj.x}
+                  y={obj.y}
+                  isOwner={isOwner}
+                  onMove={handleObjectMove}
+                >
+                  <Decoration name={obj.name} x={0} y={0} />
+                </DraggableObject>
+              )
+            } else if (obj.type === "synObject") {
+              return (
+                <DraggableObject
+                  key={obj.id}
+                  id={obj.id}
+                  x={obj.x}
+                  y={obj.y}
+                  isOwner={isOwner}
+                  onMove={handleObjectMove}
+                >
+                  <div className="text-4xl">{obj.image}</div>
+                </DraggableObject>
+              )
+            }
+            return null
+          })}
+
+          {!walletAddress && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="pixel-text text-lg text-gray-600">Please enter a wallet address</p>
+            </div>
+          )}
+        </div>
+
+        {isOwner && (
+          <div className="mt-2 text-xs text-gray-600">
+            {objects.length === 0
+              ? "Drag objects from MyBox to place them in your tank"
+              : "Drag placed objects to reposition them"}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface DraggableObjectProps {
+  id: number
+  x: number
+  y: number
+  isOwner: boolean
+  children: React.ReactNode
+  onMove: (id: number, x: number, y: number) => void
+}
+
+function DraggableObject({ id, x, y, isOwner, children, onMove }: DraggableObjectProps) {
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!isOwner) {
+      e.preventDefault()
+      return
+    }
+
+    setIsDragging(true)
+    // Store the initial mouse position relative to the object
+    const rect = e.currentTarget.getBoundingClientRect()
+    const offsetX = e.clientX - rect.left
+    const offsetY = e.clientY - rect.top
+
+    e.dataTransfer.setData(
+      "text/plain",
+      JSON.stringify({
+        id,
+        offsetX,
+        offsetY,
+      }),
+    )
+  }
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setIsDragging(false)
+
+    if (!isOwner) return
+
+    const tankElement = e.currentTarget.parentElement
+    if (!tankElement) return
+
+    const tankRect = tankElement.getBoundingClientRect()
+    const data = JSON.parse(e.dataTransfer.getData("text/plain"))
+
+    // Calculate new position
+    const newX = ((e.clientX - data.offsetX - tankRect.left) / tankRect.width) * 100
+    const newY = ((e.clientY - data.offsetY - tankRect.top) / tankRect.height) * 100
+
+    // Ensure the object stays within bounds
+    const boundedX = Math.max(0, Math.min(100, newX))
+    const boundedY = Math.max(0, Math.min(100, newY))
+
+    onMove(id, boundedX, boundedY)
+  }
+
+  return (
+    <div
+      className={`absolute ${isOwner ? "cursor-move" : ""} ${isDragging ? "opacity-50" : ""}`}
+      style={{
+        left: `${x}%`,
+        top: `${y}%`,
+        transform: "translate(-50%, -50%)",
+        zIndex: isDragging ? 10 : 1,
+      }}
+      draggable={isOwner}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      {children}
+    </div>
+  )
+}
+

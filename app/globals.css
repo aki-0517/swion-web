@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 195 100% 85%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* Pixel Art Styling */
+  .pixel-container {
+    @apply bg-white border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
+    image-rendering: pixelated;
+  }
+
+  .pixel-button {
+    @apply bg-blue-500 text-white border-2 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all duration-100;
+    image-rendering: pixelated;
+  }
+
+  .pixel-input {
+    @apply bg-white border-2 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[1px] focus:translate-y-[1px] transition-all duration-100;
+    image-rendering: pixelated;
+  }
+
+  .pixel-card {
+    @apply bg-white border-2 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-100;
+    image-rendering: pixelated;
+  }
+
+  .pixel-text {
+    font-family: "Press Start 2P", system-ui, sans-serif;
+    image-rendering: pixelated;
+  }
+
+  /* Update the fish tank styling to have an underwater background */
+  .fish-tank {
+    @apply bg-blue-300 border-4 border-black rounded-none relative overflow-hidden;
+    background-image: linear-gradient(0deg, rgba(0, 0, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 255, 0.1) 1px, transparent 1px);
+    background-size: 16px 16px;
+    image-rendering: pixelated;
+  }
+
+  /* Tank rank styling */
+  .fish-tank.rank-1 {
+    @apply bg-blue-300;
+  }
+
+  .fish-tank.rank-2 {
+    @apply bg-blue-400;
+    background-image: linear-gradient(0deg, rgba(0, 0, 255, 0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 255, 0.15) 1px, transparent 1px);
+  }
+
+  .fish-tank.rank-3 {
+    @apply bg-blue-500;
+    background-image: linear-gradient(0deg, rgba(0, 0, 255, 0.2) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 255, 0.2) 1px, transparent 1px);
+  }
+
+  .fish-tank.rank-4 {
+    background-color: #4299e1;
+    background-image: linear-gradient(0deg, rgba(0, 0, 255, 0.25) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 255, 0.25) 1px, transparent 1px),
+      radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 16px 16px, 16px 16px, 32px 32px;
+  }
+
+  .fish-tank.rank-5 {
+    background-color: #3182ce;
+    background-image: linear-gradient(0deg, rgba(0, 0, 255, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 255, 0.3) 1px, transparent 1px),
+      radial-gradient(circle, rgba(255, 255, 255, 0.15) 2px, transparent 2px);
+    background-size: 16px 16px, 16px 16px, 24px 24px;
+  }
+
+  .underwater-bg.rank-1 {
+    background-color: #a97d50;
+  }
+
+  .underwater-bg.rank-2 {
+    background-color: #b88a5c;
+    height: 70px;
+  }
+
+  .underwater-bg.rank-3 {
+    background-color: #c79768;
+    height: 80px;
+    border-top: 3px solid #a57a4e;
+  }
+
+  .underwater-bg.rank-4 {
+    background-color: #d6a474;
+    height: 90px;
+    border-top: 3px solid #b58755;
+  }
+
+  .underwater-bg.rank-5 {
+    background-color: #e5b180;
+    height: 100px;
+    border-top: 4px solid #c5945c;
+    background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+
+  .water-animation {
+    animation: water-move 3s infinite linear;
+  }
+
+  .underwater-bg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background-color: #a97d50;
+    border-top: 2px solid #8c6d43;
+    z-index: 0;
+  }
+
+  .underwater-plant {
+    position: absolute;
+    bottom: 0;
+    width: 16px;
+    height: 32px;
+    background-color: #2d8e36;
+    clip-path: polygon(50% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    z-index: 1;
+  }
+
+  .underwater-rock {
+    position: absolute;
+    bottom: 0;
+    width: 24px;
+    height: 16px;
+    background-color: #777;
+    border-top: 2px solid #555;
+    border-radius: 50% 50% 0 0;
+    z-index: 1;
+  }
+
+  .draggable-object {
+    cursor: grab;
+    transition: transform 0.1s;
+  }
+
+  .draggable-object:active {
+    cursor: grabbing;
+    transform: scale(1.05);
+  }
+
+  /* Enhance button styling */
+  .game-button {
+    @apply bg-blue-500 text-white border-2 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all duration-100 font-bold;
+    image-rendering: pixelated;
+    padding: 8px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game-button::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .explore-button {
+    background-color: #ff7e00;
+  }
+
+  .collections-button {
+    background-color: #9c27b0;
+  }
+
+  .mybox-button {
+    background-color: #4caf50;
+  }
+
+  @keyframes water-move {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 16px 16px;
+    }
+  }
+}
+
