@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import type React from "react"
 import { X, Plus } from "lucide-react"
 import CraftingModal from "./crafting-modal"
 import ObjectActionModal from "./object-action-modal"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabaseClient"
 
 interface MyBoxModalProps {
   onClose: () => void
@@ -13,19 +14,70 @@ interface MyBoxModalProps {
 
 export default function MyBoxModal({ onClose }: MyBoxModalProps) {
   const { toast } = useToast()
-  const [objects, setObjects] = useState([
-    { id: 101, type: "fish", name: "Pixel Fish", color: "red", projectId: "project1" },
-    { id: 102, type: "fish", name: "Dot Fish", color: "blue", projectId: "project1" },
-    { id: 103, type: "plant", name: "Seaweed", color: "green", projectId: "project2" },
-    { id: 104, type: "decoration", name: "Castle", projectId: "project2" },
-    { id: 105, type: "decoration", name: "Treasure", projectId: "project3" },
-    { id: 106, type: "synObject", name: "Rainbow Monster", components: [101, 102, 103], image: "🌈" },
-  ])
-
+  const [objects, setObjects] = useState<any[]>([])
   const [selectedForSynthesis, setSelectedForSynthesis] = useState<any[]>([])
   const [showCraftingModal, setShowCraftingModal] = useState(false)
   const [activeTab, setActiveTab] = useState<"all" | "components" | "synObjects">("all")
   const [selectedObject, setSelectedObject] = useState<any | null>(null)
+
+  // useEffect(() => {
+  //   async function fetchUserObjects() {
+  //     // ユーザーが所有するオブジェクトを取得
+  //     const { data: userObjects, error: objectsError } = await supabase
+  //       .from('user_objects')
+  //       .select(`
+  //         id,
+  //         type,
+  //         name,
+  //         color,
+  //         project_id,
+  //         image
+  //       `)
+  //       .eq('owner_address', 'current_user_address') // 実際のウォレットアドレスを使用
+
+  //     if (objectsError) {
+  //       toast({
+  //         title: "Error",
+  //         description: "Failed to load your objects",
+  //         variant: "destructive",
+  //       })
+  //       return
+  //     }
+
+  //     // Syn objectsを取得
+  //     const { data: synObjects, error: synError } = await supabase
+  //       .from('syn_objects')
+  //       .select(`
+  //         id,
+  //         name,
+  //         components,
+  //         image
+  //       `)
+  //       .eq('owner_address', 'current_user_address') // 実際のウォレットアドレスを使用
+
+  //     if (synError) {
+  //       toast({
+  //         title: "Error",
+  //         description: "Failed to load syn objects",
+  //         variant: "destructive",
+  //       })
+  //       return
+  //     }
+
+  //     // 両方のオブジェクトを結合
+  //     const allObjects = [
+  //       ...userObjects,
+  //       ...(synObjects?.map(syn => ({
+  //         ...syn,
+  //         type: 'synObject'
+  //       })) || [])
+  //     ]
+
+  //     setObjects(allObjects)
+  //   }
+
+  //   fetchUserObjects()
+  // }, [])
 
   // For tank drag and drop
   const handleDragStart = (e: React.DragEvent, object: any) => {

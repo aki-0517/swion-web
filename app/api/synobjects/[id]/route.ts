@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * GET /api/collections/synobjects/[id]
@@ -11,20 +12,13 @@ export async function GET(
   try {
     const synObjectId = Number(params.id);
 
-    // DBからsynObjectIdに該当するSynObjectを取得 (例)
-    const synObject = {
-      id: synObjectId,
-      attached_objects: [101, 102],
-      image: 'https://example.com/syn.png',
-      mintFlags: [
-        {
-          package: '0xPackageID',
-          module: 'ModuleName',
-          function: 'functionName',
-        },
-      ],
-      isPublic: false,
-    };
+    const { data: synObject, error } = await supabase
+      .from('syn_objects')
+      .select('*')
+      .eq('id', synObjectId)
+      .single();
+
+    if (error) throw error;
 
     if (!synObject) {
       return NextResponse.json(

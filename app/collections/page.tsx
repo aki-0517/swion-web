@@ -1,27 +1,149 @@
 "use client"
 
-import { useState } from "react"
-import Layout from "@/components/layout"
-import CollectionsList from "@/components/collections-list"
-import CollectionDetailModal from "@/components/collection-detail-modal"
+import { useEffect, useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabaseClient"
+import Image from "next/image"
+import Header from "@/components/header"
+import SynObjectDetailModal from "@/components/syn-object-detail-modal"
+
+interface MintFlag {
+  module: string
+  package: string
+  function: string
+}
+
+interface SynObject {
+  id: number
+  name: string
+  image: string
+  attached_objects: number[]
+  mint_flags: MintFlag[]
+  is_public: boolean
+  created_at: string
+  updated_at: string
+}
 
 export default function CollectionsPage() {
-  const [selectedCollection, setSelectedCollection] = useState<string | null>(null)
+  const [synObjects, setSynObjects] = useState<SynObject[]>([])
+  const [objectImages, setObjectImages] = useState<{ [key: number]: string }>({})
+  const [selectedSynObject, setSelectedSynObject] = useState<SynObject | null>(null)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    async function fetchPublicSynObjects() {
+      const { data, error } = await supabase
+        .from('syn_objects')
+        .select('*')
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        toast({
+          title: "エラー",
+          description: "コレクションの読み込みに失敗しました",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setSynObjects(data || [])
+
+      const imageUrls: { [key: number]: string } = {}
+      for (const object of data || []) {
+        if (object.image) {
+          const { data: imageUrl } = supabase
+            .storage
+            .from('syn-objects')
+            .getPublicUrl(object.image)
+          
+          if (imageUrl) {
+            imageUrls[object.id] = imageUrl.publicUrl
+          }
+        }
+      }
+      setObjectImages(imageUrls)
+    }
+
+    fetchPublicSynObjects()
+  }, [])
+
+  const formatMintFlags = (mintFlags: MintFlag[]) => {
+    return mintFlags.map(flag => 
+      `${flag.package}::${flag.module}::${flag.function}`
+    ).join(', ')
+  }
 
   return (
-    <Layout>
-      <div className="w-full max-w-6xl mx-auto p-4">
-        <div className="pixel-container p-4">
-          <h1 className="pixel-text text-2xl mb-4">Collections</h1>
+    <div className="min-h-screen bg-gray-50">
+      <Header 
+        isConnected={false}  // ここは実際のウォレット接続状態に応じて変更
+        onConnect={() => {}}  // 実際の接続ハンドラーを実装
+        onDisconnect={() => {}}  // 実際の切断ハンドラーを実装
+        onWalletSearch={() => {}}  // 実際の検索ハンドラーを実装
+        currentWallet=""
+      />
 
-          <CollectionsList onSelectCollection={setSelectedCollection} />
+      <main className="container mx-auto px-4 py-8">
+        <h1 className="pixel-text text-2xl mb-6">Public Collections</h1>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {synObjects.map((synObject) => (
+            <div 
+              key={synObject.id} 
+              className="pixel-card p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={() => setSelectedSynObject(synObject)}
+            >
+              <div className="w-full aspect-square bg-blue-100 border-2 border-black mb-4 relative">
+                {objectImages[synObject.id] ? (
+                  <Image
+                    src={objectImages[synObject.id]}
+                    alt={synObject.name || `SynObject ${synObject.id}`}
+                    fill
+                    className="object-contain p-2"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    No Image
+                  </div>
+                )}
+              </div>
 
-          {selectedCollection && (
-            <CollectionDetailModal collectionId={selectedCollection} onClose={() => setSelectedCollection(null)} />
-          )}
+              <div className="space-y-2">
+                <h3 className="pixel-text text-lg">
+                  {synObject.name || `SynObject ${synObject.id}`}
+                </h3>
+
+                <div className="text-sm">
+                  <div className="font-semibold">Attached Objects:</div>
+                  <div className="text-gray-600">
+                    {synObject.attached_objects.length} objects
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-500">
+                  Created: {new Date(synObject.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
-    </Layout>
+
+        {synObjects.length === 0 && (
+          <div className="text-center text-gray-500 py-12">
+            公開されているコレクションはまだありません。
+          </div>
+        )}
+
+        {selectedSynObject && (
+          <SynObjectDetailModal
+            synObject={selectedSynObject}
+            onClose={() => setSelectedSynObject(null)}
+          />
+        )}
+      </main>
+    </div>
   )
 }
 

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Fish, Plant, Decoration } from "@/components/tank-objects"
 import { Save, TrendingUp } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
 
 interface FishTankProps {
   walletAddress: string
@@ -22,32 +23,60 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const [txCount, setTxCount] = useState(0)
   const [canUpgrade, setCanUpgrade] = useState(false)
 
-  // Simulate loading tank objects and transaction count
   useEffect(() => {
-    if (walletAddress) {
-      // Mock data - in a real app, this would come from the blockchain
-      setObjects([
-        { id: 1, type: "fish", x: 30, y: 40, color: "orange" },
-        { id: 2, type: "plant", x: 70, y: 80, color: "green" },
-        { id: 3, type: "decoration", x: 50, y: 60, name: "castle" },
-      ])
+    async function fetchTankData() {
+      if (walletAddress) {
+        // タンクのオブジェクトを取得
+        const { data: tankObjects, error: objectsError } = await supabase
+          .from('tank_objects')
+          .select('*')
+          .eq('wallet_address', walletAddress)
 
-      // Simulate transaction count
-      const mockTxCount = Math.floor(Math.random() * 50) + 5
-      setTxCount(mockTxCount)
+        if (objectsError) {
+          toast({
+            title: "Error",
+            description: "Failed to load tank objects",
+            variant: "destructive",
+          })
+          return
+        }
 
-      // Calculate rank based on tx count
-      const newRank = Math.floor(mockTxCount / 10) + 1
-      setTankRank(newRank)
+        setObjects(tankObjects || [])
 
-      // Check if can upgrade
-      setCanUpgrade(mockTxCount >= newRank * 10 && newRank < 5)
-    } else {
-      setObjects([])
-      setTxCount(0)
-      setTankRank(1)
-      setCanUpgrade(false)
+        // トランザクション数を取得
+        const { data: txData, error: txError } = await supabase
+          .from('wallet_transactions')
+          .select('tx_count')
+          .eq('wallet_address', walletAddress)
+          .single()
+
+        if (txError) {
+          toast({
+            title: "Error",
+            description: "Failed to load transaction count",
+            variant: "destructive",
+          })
+          return
+        }
+
+        const txCount = txData?.tx_count || 0
+        setTxCount(txCount)
+
+        // ランクを計算
+        const newRank = Math.floor(txCount / 10) + 1
+        setTankRank(newRank)
+
+        // アップグレード可能かチェック
+        setCanUpgrade(txCount >= newRank * 10 && newRank < 5)
+      } else {
+        setObjects([])
+        setTxCount(0)
+        setTankRank(1)
+        setCanUpgrade(false)
+      }
     }
+
+    fetchTankData()
   }, [walletAddress])
 
   const handleDrop = (e: React.DragEvent) => {

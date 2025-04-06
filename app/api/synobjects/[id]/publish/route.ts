@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * PATCH /api/collections/synobjects/[id]/publish
- * 特定のSynObjectのisPublicをtrueに更新
+ * 特定のSynObjectのis_publicをtrueに更新
  */
 export async function PATCH(
   request: NextRequest,
@@ -11,23 +12,21 @@ export async function PATCH(
   try {
     const synObjectId = Number(params.id);
 
-    // DBで対象SynObjectを検索 (例)
-    // 対象が存在しない場合は404を返す処理を実装する
+    const { data: updatedSynObject, error } = await supabase
+      .from('syn_objects')
+      .update({ is_public: true })
+      .eq('id', synObjectId)
+      .select()
+      .single();
 
-    // DBで対象SynObjectのisPublicをtrueに更新 (例)
-    const updatedSynObject = {
-      id: synObjectId,
-      attached_objects: [101, 102],
-      image: 'https://example.com/syn.png',
-      mintFlags: [
-        {
-          package: '0xPackageID',
-          module: 'ModuleName',
-          function: 'functionName',
-        },
-      ],
-      isPublic: true,
-    };
+    if (error) throw error;
+
+    if (!updatedSynObject) {
+      return NextResponse.json(
+        { error: 'SynObject not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ data: updatedSynObject }, { status: 200 });
   } catch (error: any) {

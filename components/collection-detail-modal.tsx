@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabaseClient"
 
 interface CollectionDetailModalProps {
   collectionId: string
@@ -15,58 +16,58 @@ export default function CollectionDetailModal({ collectionId, onClose }: Collect
   const { toast } = useToast()
 
   useEffect(() => {
-    // Simulate loading collection data
-    const collections: Record<string, any> = {
-      collection1: {
-        name: "Dragon Knight",
-        image: "🐉",
-        creator: "0xUser123",
-        price: 0.5,
-        objects: [
-          { type: "Monster", name: "Pixel Dragon", projectId: "project1" },
-          { type: "Costume", name: "Knight Armor", projectId: "project2" },
-          { type: "Decoration", name: "Castle", projectId: "project2" },
-        ],
-      },
-      collection2: {
-        name: "Ocean King",
-        image: "🐠",
-        creator: "0xUser456",
-        price: 0.8,
-        objects: [
-          { type: "Monster", name: "Golden Fish", projectId: "project3" },
-          { type: "Costume", name: "Crown", projectId: "project1" },
-          { type: "Background", name: "Ocean Theme", projectId: "project2" },
-        ],
-      },
-      collection3: {
-        name: "Treasure Hunter",
-        image: "🦑",
-        creator: "0xUser789",
-        price: 1.2,
-        objects: [
-          { type: "Monster", name: "Squid", projectId: "project3" },
-          { type: "Costume", name: "Explorer Hat", projectId: "project1" },
-          { type: "Decoration", name: "Treasure Chest", projectId: "project2" },
-        ],
-      },
-      collection4: {
-        name: "Pixel Warrior",
-        image: "🐙",
-        creator: "You",
-        price: 0,
-        objects: [
-          { type: "Monster", name: "Octopus", projectId: "project3" },
-          { type: "Costume", name: "Warrior Armor", projectId: "project1" },
-          { type: "Decoration", name: "Weapon Rack", projectId: "project2" },
-        ],
-      },
+    async function fetchCollectionData() {
+      // コレクション情報を取得
+      const { data: collectionData, error: collectionError } = await supabase
+        .from('collections')
+        .select(`
+          id,
+          name,
+          image,
+          creator,
+          price,
+          objects (
+            id,
+            type,
+            name,
+            project_id
+          )
+        `)
+        .eq('id', collectionId)
+        .single()
+
+      if (collectionError) {
+        toast({
+          title: "Error",
+          description: "Failed to load collection",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setCollection(collectionData)
+
+      // ミント適格性をチェック
+      const { data: eligibilityData, error: eligibilityError } = await supabase
+        .from('collection_eligibility')
+        .select('is_eligible')
+        .eq('collection_id', collectionId)
+        .eq('user_address', 'current_user_address') // 実際のウォレットアドレスを使用
+        .single()
+
+      if (eligibilityError) {
+        toast({
+          title: "Error",
+          description: "Failed to check eligibility",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setIsEligible(eligibilityData?.is_eligible || false)
     }
 
-    setCollection(collections[collectionId])
-
-    // Randomly determine eligibility for demo purposes
-    setIsEligible(Math.random() > 0.5)
+    fetchCollectionData()
   }, [collectionId])
 
   const handleMint = () => {

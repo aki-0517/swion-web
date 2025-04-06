@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * GET /api/explore/objects/[id]
@@ -11,18 +12,18 @@ export async function GET(
   try {
     const objectId = Number(params.id);
 
-    // DBからobjectIdに該当するNFT Objectを取得 (例)
-    // mintFlagをオブジェクト型に変更
-    const nftObject = {
-      id: objectId,
-      name: 'Sample NFT Object',
-      image: 'https://example.com/nft.png',
-      mintFlag: {
-        package: '0xPackageID',
-        module: 'ModuleName',
-        function: 'functionName',
-      },
-    };
+    const { data: nftObject, error } = await supabase
+      .from('nft_objects')
+      .select('id, name, image, mint_flag, created_at, updated_at')
+      .eq('id', objectId)
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
 
     if (!nftObject) {
       return NextResponse.json(

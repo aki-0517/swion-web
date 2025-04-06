@@ -1,25 +1,18 @@
+// app/api/explore/projects/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * GET /api/explore/projects
- * Projectを一覧取得
+ * Supabaseからprojectsテーブルの全データを取得して返す
  */
 export async function GET(req: NextRequest) {
-  try {
-    // DBからProject一覧を取得する処理 (例)
-    const projects = [
-      {
-        id: 1,
-        name: 'Sample Project',
-        logoImage: 'https://example.com/logo.png',
-        url: 'https://example.com',
-        description: 'Project description',
-      },
-      // ...その他のProject
-    ];
+  // Supabaseからprojectsテーブルの全件取得
+  const { data, error } = await supabase.from('projects').select('*');
 
-    return NextResponse.json({ data: projects }, { status: 200 });
-  } catch (error: any) {
+  if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  return NextResponse.json({ data }, { status: 200 });
 }

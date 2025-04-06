@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabaseClient"
 
 interface CraftingModalProps {
   objects: any[]
@@ -16,100 +17,57 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
   const { toast } = useToast()
 
   useEffect(() => {
-    // Simulate crafting result calculation
-    const timer = setTimeout(() => {
-      // Generate a result based on the combination
-      const result = getCraftingResult(objects)
-      setResultObject(result)
-      setIsLoading(false)
-    }, 1500)
+    async function calculateCraftingResult() {
+      try {
+        // クラフトの結果を計算するAPIを呼び出し
+        const { data: result, error } = await supabase
+          .rpc('calculate_crafting_result', {
+            object_ids: objects.map(obj => obj.id),
+            object_types: objects.map(obj => obj.type)
+          })
 
-    return () => clearTimeout(timer)
+        if (error) throw error
+
+        setResultObject(result)
+        setIsLoading(false)
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: "Failed to calculate crafting result",
+          variant: "destructive",
+        })
+        setIsLoading(false)
+      }
+    }
+
+    calculateCraftingResult()
   }, [objects])
 
-  const getCraftingResult = (selectedObjects: any[]) => {
-    // Simple crafting logic - in a real app this would be more complex
-    // and would come from a backend or blockchain
+  const handleMint = async () => {
+    try {
+      // 新しいSynObjectを作成
+      const { data: newSynObject, error } = await supabase
+        .from('syn_objects')
+        .insert({
+          name: resultObject.name,
+          rarity: resultObject.rarity,
+          image: resultObject.image,
+          components: objects.map(obj => obj.id),
+          owner_address: 'current_user_address' // 実際のウォレットアドレスを使用
+        })
+        .select()
+        .single()
 
-    // Count object types
-    const types = selectedObjects.map((obj) => obj.type)
-    const fishCount = types.filter((type) => type === "fish").length
-    const plantCount = types.filter((type) => type === "plant").length
-    const decorationCount = types.filter((type) => type === "decoration").length
+      if (error) throw error
 
-    // All fish
-    if (fishCount === selectedObjects.length && fishCount > 0) {
-      return {
-        name: fishCount > 1 ? "School of Fish" : "Rainbow Fish",
-        rarity: fishCount > 2 ? "Epic" : fishCount > 1 ? "Rare" : "Uncommon",
-        image: fishCount > 2 ? "🐠🐟🐡" : fishCount > 1 ? "🐠🐟" : "🐠",
-      }
+      onComplete(newSynObject)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to mint new object",
+        variant: "destructive",
+      })
     }
-
-    // All plants
-    if (plantCount === selectedObjects.length && plantCount > 0) {
-      return {
-        name: plantCount > 1 ? "Coral Reef" : "Giant Seaweed",
-        rarity: plantCount > 2 ? "Epic" : plantCount > 1 ? "Rare" : "Uncommon",
-        image: plantCount > 2 ? "🌿🌱🌾" : plantCount > 1 ? "🌿🌱" : "🌿",
-      }
-    }
-
-    // All decorations
-    if (decorationCount === selectedObjects.length && decorationCount > 0) {
-      return {
-        name: decorationCount > 1 ? "Treasure Collection" : "Golden Shrine",
-        rarity: decorationCount > 2 ? "Legendary" : decorationCount > 1 ? "Epic" : "Rare",
-        image: decorationCount > 2 ? "🏯🏰🏛️" : decorationCount > 1 ? "🏯🏰" : "🏯",
-      }
-    }
-
-    // Fish + Plant combination
-    if (fishCount > 0 && plantCount > 0 && decorationCount === 0) {
-      return {
-        name: "Aquatic Monster",
-        rarity: fishCount + plantCount > 2 ? "Epic" : "Rare",
-        image: "🦕",
-      }
-    }
-
-    // Fish + Decoration combination
-    if (fishCount > 0 && decorationCount > 0 && plantCount === 0) {
-      return {
-        name: "Treasure Guardian",
-        rarity: fishCount + decorationCount > 2 ? "Epic" : "Rare",
-        image: "🐉",
-      }
-    }
-
-    // Plant + Decoration combination
-    if (plantCount > 0 && decorationCount > 0 && fishCount === 0) {
-      return {
-        name: "Enchanted Garden",
-        rarity: plantCount + decorationCount > 2 ? "Epic" : "Rare",
-        image: "🌳",
-      }
-    }
-
-    // All three types
-    if (fishCount > 0 && plantCount > 0 && decorationCount > 0) {
-      return {
-        name: "Mythical Aquarium",
-        rarity: "Legendary",
-        image: "🌈",
-      }
-    }
-
-    // Default fallback
-    return {
-      name: "Mystery Object",
-      rarity: "Common",
-      image: "❓",
-    }
-  }
-
-  const handleMint = () => {
-    onComplete(resultObject)
   }
 
   return (

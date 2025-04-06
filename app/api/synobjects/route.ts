@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * POST /api/collections/synobjects
@@ -7,23 +8,26 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    // body.objects: 複数のobject情報が入っていると想定
-    // OpenAI APIを呼び出し、画像や名前を生成するロジックを実装する
+    
+    // Supabaseにデータを挿入
+    const { data: newSynObject, error } = await supabase
+      .from('syn_objects')
+      .insert({
+        attached_objects: body.objects,
+        image: 'https://example.com/generated-image.png', // OpenAI生成後の画像URLを設定
+        mint_flags: [
+          {
+            package: '0xPackageID',
+            module: 'ModuleName',
+            function: 'functionName',
+          },
+        ],
+        is_public: false,
+      })
+      .select()
+      .single();
 
-    // 例: DBにSynObjectを作成
-    const newSynObject = {
-      id: 999,
-      attached_objects: body.objects,
-      image: 'https://example.com/generated-image.png',
-      mintFlags: [
-        {
-          package: '0xPackageID',
-          module: 'ModuleName',
-          function: 'functionName',
-        },
-      ],
-      isPublic: false,
-    };
+    if (error) throw error;
 
     return NextResponse.json({ data: newSynObject }, { status: 201 });
   } catch (error: any) {
@@ -33,44 +37,16 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/collections/synobjects
- * 公開されているSynObject(isPublic=true)を一覧取得
+ * 公開されているSynObject(is_public=true)を一覧取得
  */
 export async function GET() {
   try {
-    // DBからisPublic = true のSynObject一覧を取得 (例)
-    const synObjects = [
-      {
-        id: 1,
-        attached_objects: [101, 102],
-        image: 'https://example.com/syn1.png',
-        mintFlags: [
-          {
-            package: '0xPackageID',
-            module: 'ModuleName',
-            function: 'functionName',
-          },
-        ],
-        isPublic: true,
-      },
-      {
-        id: 2,
-        attached_objects: [103],
-        image: 'https://example.com/syn2.png',
-        mintFlags: [
-          {
-            package: '0xPackageID',
-            module: 'ModuleName',
-            function: 'functionName',
-          },
-          {
-            package: '0xAnotherPackageID',
-            module: 'AnotherModule',
-            function: 'anotherFunction',
-          },
-        ],
-        isPublic: true,
-      },
-    ];
+    const { data: synObjects, error } = await supabase
+      .from('syn_objects')
+      .select('*')
+      .eq('is_public', true);
+
+    if (error) throw error;
 
     return NextResponse.json({ data: synObjects }, { status: 200 });
   } catch (error: any) {

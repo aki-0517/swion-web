@@ -1,23 +1,65 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabaseClient"
+import Image from "next/image"
+
+interface Project {
+  id: number
+  name: string
+  description: string
+  logo_image: string | null
+  url: string | null
+}
+
 interface ProjectListProps {
-  onSelectProject: (projectId: string) => void
+  onSelectProject: (projectId: number) => void
 }
 
 export default function ProjectList({ onSelectProject }: ProjectListProps) {
-  const projects = [
-    { id: "project1", name: "Pixel Monsters", description: "Collect pixel art monsters for your tank" },
-    { id: "project2", name: "Aqua Decorations", description: "Beautiful decorations for your aquarium" },
-    { id: "project3", name: "Rare Fish", description: "Rare and exotic fish species" },
-  ]
+  const [projects, setProjects] = useState<Project[]>([])
+  const { toast } = useToast()
+
+  useEffect(() => {
+    async function fetchProjects() {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, description, logo_image, url')
+        .order('name')
+
+      if (error) {
+        toast({
+          title: "エラー",
+          description: "プロジェクトの読み込みに失敗しました",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setProjects(data || [])
+    }
+
+    fetchProjects()
+  }, [])
 
   return (
     <div className="space-y-4">
       {projects.map((project) => (
         <div key={project.id} className="pixel-card p-4 cursor-pointer" onClick={() => onSelectProject(project.id)}>
           <div className="flex items-center">
-            <div className="w-12 h-12 bg-blue-200 border-2 border-black mr-4 flex items-center justify-center">
-              <span className="pixel-text">{project.name.charAt(0)}</span>
+            <div className="w-12 h-12 bg-blue-200 border-2 border-black mr-4 flex items-center justify-center overflow-hidden">
+              {project.logo_image ? (
+                <Image
+                  src={project.logo_image}
+                  alt={`${project.name} logo`}
+                  width={48}
+                  height={48}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="pixel-text">{project.name.charAt(0)}</span>
+              )}
             </div>
 
             <div>
