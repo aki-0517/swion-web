@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { ChevronDown } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
+import { ConnectButton } from "@mysten/dapp-kit"
 
 interface HeaderProps {
   isConnected: boolean
@@ -59,37 +60,7 @@ export default function Header({ isConnected, onConnect, onDisconnect, onWalletS
         </div>
 
         <div>
-          {isConnected ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="pixel-button px-3 py-1 flex items-center">
-                  <span className="mr-1">0xMyWallet</span>
-                  <ChevronDown size={16} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="pixel-container p-0 min-w-[160px]">
-                <DropdownMenuItem
-                  className="pixel-text text-sm p-2 cursor-pointer hover:bg-blue-100"
-                  onClick={() => {
-                    onWalletSearch("0xMyWallet")
-                    router.push("/")
-                  }}
-                >
-                  My Page
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="pixel-text text-sm p-2 cursor-pointer hover:bg-blue-100"
-                  onClick={onDisconnect}
-                >
-                  Disconnect
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <button onClick={onConnect} className="pixel-button px-3 py-1">
-              Connect Wallet
-            </button>
-          )}
+          <ConnectButton connectText="Connect Wallet" />
         </div>
       </div>
     </header>
