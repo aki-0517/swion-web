@@ -41,7 +41,7 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="pixel-container sm:max-w-[425px]">
+      <DialogContent className="pixel-container sm:max-w-[425px] bg-white">
         <DialogHeader>
           <DialogTitle className="pixel-text text-xl">{object.name}</DialogTitle>
         </DialogHeader>

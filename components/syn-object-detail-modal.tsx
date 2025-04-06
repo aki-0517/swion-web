@@ -44,7 +44,7 @@ export default function SynObjectDetailModal({ synObject, onClose }: SynObjectDe
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="pixel-container sm:max-w-[425px]">
+      <DialogContent className="pixel-container sm:max-w-[425px] bg-white">
         <DialogHeader>
           <DialogTitle className="pixel-text text-xl">
             {synObject.name || `SynObject ${synObject.id}`}
