@@ -4,11 +4,12 @@ import { useState } from "react"
 import Layout from "@/components/layout"
 import FishTank from "@/components/fish-tank"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 
 export default function Home() {
   const [currentWallet, setCurrentWallet] = useState<string>("")
-  const [isConnected, setIsConnected] = useState(false)
   const { toast } = useToast()
+  const account = useCurrentAccount()
 
   const handleWalletSearch = (address: string) => {
     if (!address || !address.trim()) {
@@ -28,15 +29,9 @@ export default function Home() {
   }
 
   return (
-    <Layout
-      isConnected={isConnected}
-      onConnect={() => setIsConnected(true)}
-      onDisconnect={() => setIsConnected(false)}
-      onWalletSearch={handleWalletSearch}
-      currentWallet={currentWallet}
-    >
+    <Layout onWalletSearch={handleWalletSearch}>
       <div className="flex items-center justify-center w-full h-full">
-        <FishTank walletAddress={currentWallet} isOwner={isConnected && currentWallet === "0xMyWallet"} />
+        <FishTank walletAddress={currentWallet} isOwner={account?.address === currentWallet} />
       </div>
     </Layout>
   )

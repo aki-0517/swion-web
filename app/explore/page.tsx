@@ -28,7 +28,9 @@ export default function ExplorePage() {
   const [selectedObject, setSelectedObject] = useState<NFTObject | null>(null)
 
   return (
-    <Layout>
+    <Layout onWalletSearch={function (address: string): void {
+      throw new Error("Function not implemented.")
+    }}>
       <div className="w-full max-w-6xl mx-auto p-4">
         <div className="pixel-container p-4">
           <h1 className="pixel-text text-2xl mb-4">Project Explore</h1>
@@ -45,7 +47,7 @@ export default function ExplorePage() {
           )}
 
           {selectedObject && (
-            <ObjectDetailModal 
+            <ObjectDetailModal
               object={selectedObject}
               onClose={() => setSelectedObject(null)}
             />

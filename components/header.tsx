@@ -1,25 +1,21 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronDown } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-import { ConnectButton } from "@mysten/dapp-kit"
+import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit"
 
 interface HeaderProps {
-  isConnected: boolean
-  onConnect: () => void
-  onDisconnect: () => void
   onWalletSearch: (address: string) => void
-  currentWallet: string
 }
 
-export default function Header({ isConnected, onConnect, onDisconnect, onWalletSearch, currentWallet }: HeaderProps) {
+export default function Header({ onWalletSearch }: HeaderProps) {
   const [walletInput, setWalletInput] = useState("")
   const router = useRouter()
+  const account = useCurrentAccount()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,7 +56,29 @@ export default function Header({ isConnected, onConnect, onDisconnect, onWalletS
         </div>
 
         <div>
-          <ConnectButton connectText="Connect Wallet" />
+          {account ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="pixel-button px-3 py-1 flex items-center">
+                  <span className="mr-1">{account.address.slice(0, 6)}...{account.address.slice(-4)}</span>
+                  <ChevronDown size={16} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="pixel-container p-0 min-w-[160px]">
+                <DropdownMenuItem
+                  className="pixel-text text-sm p-2 cursor-pointer hover:bg-blue-100"
+                  onClick={() => {
+                    onWalletSearch(account.address)
+                    router.push("/")
+                  }}
+                >
+                  My Page
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <ConnectButton connectText="Connect Wallet" />
+          )}
         </div>
       </div>
     </header>

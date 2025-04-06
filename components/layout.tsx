@@ -1,47 +1,35 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import MyBoxModal from "@/components/my-box-modal"
+import { useCurrentAccount } from "@mysten/dapp-kit"
+
 
 interface LayoutProps {
   children: React.ReactNode
-  isConnected?: boolean
-  onConnect?: () => void
-  onDisconnect?: () => void
-  onWalletSearch?: (address: string) => void
-  currentWallet?: string
+  onWalletSearch: (address: string) => void
 }
 
 export default function Layout({
   children,
-  isConnected = false,
-  onConnect = () => {},
-  onDisconnect = () => {},
-  onWalletSearch = () => {},
-  currentWallet = "",
+  onWalletSearch
 }: LayoutProps) {
   const [isMyBoxOpen, setIsMyBoxOpen] = useState(false)
   const router = useRouter()
+  const account = useCurrentAccount()
 
   return (
     <div className="flex flex-col min-h-screen bg-blue-100">
-      <Header
-        isConnected={isConnected}
-        onConnect={onConnect}
-        onDisconnect={onDisconnect}
-        onWalletSearch={onWalletSearch}
-        currentWallet={currentWallet}
-      />
+      <Header onWalletSearch={onWalletSearch} />
 
       <main className="flex-1 p-4">{children}</main>
 
       <div className="relative">
-        {isConnected && (
+        {account?.address && (
           <button className="absolute bottom-20 left-4 game-button mybox-button" onClick={() => setIsMyBoxOpen(true)}>
             MyBox
           </button>

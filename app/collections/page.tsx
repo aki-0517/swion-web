@@ -77,11 +77,10 @@ export default function CollectionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
-        isConnected={false}  // ここは実際のウォレット接続状態に応じて変更
-        onConnect={() => {}}  // 実際の接続ハンドラーを実装
-        onDisconnect={() => {}}  // 実際の切断ハンドラーを実装
-        onWalletSearch={() => {}}  // 実際の検索ハンドラーを実装
-        currentWallet=""
+        onWalletSearch={(address: string) => {
+          // ウォレットアドレスで検索する処理を実装
+          console.log("Searching wallet:", address);
+        }}
       />
 
       <main className="container mx-auto px-4 py-8">
