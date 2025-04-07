@@ -3,7 +3,7 @@ import '@mysten/dapp-kit/dist/index.css';
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
-import ClientProviders from "@/components/ClientProviders";
+import ClientProviders from "@/components/clientProviders";
 
 const inter = Inter({ subsets: ["latin"] });
 
