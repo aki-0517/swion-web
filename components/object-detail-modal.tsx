@@ -3,6 +3,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Image from "next/image"
 import { supabase } from "@/lib/supabaseClient"
+import { useToast } from "@/hooks/use-toast"
+import { useCurrentAccount, useSignTransaction, useSuiClient } from "@mysten/dapp-kit"
+import { Transaction } from "@mysten/sui/transactions"
+import { useState } from "react"
 
 interface MintFlag {
   module: string
@@ -26,6 +30,12 @@ interface ObjectDetailModalProps {
 }
 
 export default function ObjectDetailModal({ object, onClose }: ObjectDetailModalProps) {
+  const { toast } = useToast()
+  const account = useCurrentAccount()
+  const signTransaction = useSignTransaction()
+  const suiClient = useSuiClient()
+  const [isLoading, setIsLoading] = useState(false)
+
   const formatMintFlag = (mintFlag: MintFlag) => {
     return `${mintFlag.package}::${mintFlag.module}::${mintFlag.function}`
   }
@@ -37,6 +47,69 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
       .getPublicUrl(object.image)
     
     return data?.publicUrl
+  }
+
+  const handleMint = async () => {
+    setIsLoading(true)
+    if (!account) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      // Create a new transaction
+      const tx = new Transaction()
+      
+      // Set sender explicitly
+      tx.setSender(account.address)
+      
+      // Add mint_nft_object move call to the transaction
+      tx.moveCall({
+        target: "0xe8945f6d94b15e5f91e21ae4c738bc997bc0614f38e3fec839dff6d1cff74564::nft_system::mint_nft_object",
+        arguments: [
+          // nameをバイト配列として渡す
+          tx.pure.vector("u8", Array.from(new TextEncoder().encode(object.name))),
+          // imageをバイト配列として渡す
+          tx.pure.vector("u8", Array.from(new TextEncoder().encode(getImageUrl() || ''))),
+        ]
+      })
+
+      // Build transaction bytes
+      await tx.build({ client: suiClient })
+      
+      // Sign the transaction
+      const { bytes, signature } = await signTransaction.mutateAsync({ transaction: tx })
+      
+      // Execute the transaction
+      const result = await suiClient.executeTransactionBlock({
+        transactionBlock: bytes,
+        signature,
+        options: { showEffects: true, showEvents: true },
+      })
+      
+      // Wait for transaction to complete
+      await suiClient.waitForTransaction({ digest: result.digest })
+
+      toast({
+        title: "Success",
+        description: `Successfully minted ${object.name}!`,
+      })
+      onClose()
+    } catch (error) {
+      console.error("Mint error:", error)
+      toast({
+        title: "Error",
+        description: "Failed to mint NFT",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -71,9 +144,23 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
               <h4 className="pixel-text text-sm">Object ID:</h4>
               <p className="text-sm">{object.id}</p>
             </div>
+
+            {/* Mint button */}
+            <div className="mt-6">
+              <button
+                onClick={handleMint}
+                disabled={isLoading}
+                className="game-button w-full py-2"
+              >
+                {isLoading ? "Minting..." : "Mint NFT"}
+              </button>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                When you mint this NFT, it will be transferred to your wallet
+              </p>
+            </div>
           </div>
         </div>
       </DialogContent>
     </Dialog>
   )
-} 
+}
