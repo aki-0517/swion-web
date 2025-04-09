@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Fish, Plant, Decoration } from "@/components/tank-objects"
 import { Save, TrendingUp } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
 
 interface FishTankProps {
   walletAddress: string
@@ -17,6 +18,8 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const [objects, setObjects] = useState<any[]>([])
   const [hasChanges, setHasChanges] = useState(false)
   const { toast } = useToast()
+  const [tankBackground, setTankBackground] = useState<string>("")
+  const suiClient = useSuiClient()
 
   // Add tank rank state
   const [tankRank, setTankRank] = useState(1)
@@ -78,6 +81,49 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
 
     fetchTankData()
   }, [walletAddress])
+
+  useEffect(() => {
+    async function fetchWaterTankSBT() {
+      if (walletAddress) {
+        try {
+          // WaterTankオブジェクトを取得
+          const objects = await suiClient.getOwnedObjects({
+            owner: walletAddress,
+            filter: {
+              Package: "0x7e9b7f94306f063abcdcbd5375200bd6e3531ee5861e4978cdc5d5d44a76c6f0"
+            },
+            options: {
+              showContent: true,
+              showType: true
+            }
+          })
+
+          // WaterTankオブジェクトを探す
+          const waterTank = objects.data.find(obj => {
+            const type = obj.data?.type as string
+            return type.includes("WaterTank")
+          })
+
+          if (waterTank) {
+            const content = waterTank.data?.content as any
+            const fields = content?.fields || {}
+            // background_imageフィールドからURLを取得
+            const backgroundUrl = fields.background_image || ""
+            setTankBackground(backgroundUrl)
+          }
+        } catch (error) {
+          console.error("Error fetching WaterTank:", error)
+          toast({
+            title: "エラー",
+            description: "水槽SBTの取得に失敗しました",
+            variant: "destructive",
+          })
+        }
+      }
+    }
+
+    fetchWaterTankSBT()
+  }, [walletAddress, suiClient])
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -184,59 +230,69 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           className={`fish-tank water-animation w-full h-[400px] relative rank-${tankRank}`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
+          style={{
+            backgroundImage: tankBackground ? `url(${tankBackground})` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
         >
           {/* Underwater background elements - enhanced based on rank */}
           {walletAddress && (
             <>
-              <div className={`underwater-bg rank-${tankRank}`}></div>
-
-              {/* More decorations based on rank */}
-              <div className="underwater-plant" style={{ left: "10%" }}></div>
-              <div className="underwater-plant" style={{ left: "25%", height: "24px" }}></div>
-              <div className="underwater-rock" style={{ left: "40%" }}></div>
-              <div className="underwater-plant" style={{ left: "60%" }}></div>
-              <div className="underwater-rock" style={{ left: "75%" }}></div>
-              <div className="underwater-plant" style={{ left: "85%", height: "28px" }}></div>
-
-              {tankRank >= 2 && (
+              {/* 背景画像がある場合は既存の背景要素を非表示にする */}
+              {!tankBackground && (
                 <>
-                  <div className="underwater-plant" style={{ left: "15%", height: "32px" }}></div>
-                  <div className="underwater-rock" style={{ left: "30%", width: "32px" }}></div>
-                </>
-              )}
+                  <div className={`underwater-bg rank-${tankRank}`}></div>
 
-              {tankRank >= 3 && (
-                <>
-                  <div className="underwater-plant" style={{ left: "50%", height: "36px" }}></div>
-                  <div className="underwater-rock" style={{ left: "65%", width: "28px" }}></div>
-                  <div className="pixel-text text-xs absolute" style={{ left: "20%", top: "30%" }}>
-                    ✨
-                  </div>
-                </>
-              )}
+                  {/* More decorations based on rank */}
+                  <div className="underwater-plant" style={{ left: "10%" }}></div>
+                  <div className="underwater-plant" style={{ left: "25%", height: "24px" }}></div>
+                  <div className="underwater-rock" style={{ left: "40%" }}></div>
+                  <div className="underwater-plant" style={{ left: "60%" }}></div>
+                  <div className="underwater-rock" style={{ left: "75%" }}></div>
+                  <div className="underwater-plant" style={{ left: "85%", height: "28px" }}></div>
 
-              {tankRank >= 4 && (
-                <>
-                  <div className="pixel-text text-xs absolute" style={{ left: "40%", top: "20%" }}>
-                    💎
-                  </div>
-                  <div className="pixel-text text-xs absolute" style={{ left: "70%", top: "40%" }}>
-                    🌟
-                  </div>
-                </>
-              )}
+                  {tankRank >= 2 && (
+                    <>
+                      <div className="underwater-plant" style={{ left: "15%", height: "32px" }}></div>
+                      <div className="underwater-rock" style={{ left: "30%", width: "32px" }}></div>
+                    </>
+                  )}
 
-              {tankRank >= 5 && (
-                <>
-                  <div className="pixel-text text-xs absolute" style={{ left: "30%", top: "15%" }}>
-                    👑
-                  </div>
-                  <div className="pixel-text text-xs absolute" style={{ left: "60%", top: "25%" }}>
-                    🏆
-                  </div>
-                  <div className="pixel-text text-xs absolute" style={{ left: "80%", top: "35%" }}>
-                    💫
-                  </div>
+                  {tankRank >= 3 && (
+                    <>
+                      <div className="underwater-plant" style={{ left: "50%", height: "36px" }}></div>
+                      <div className="underwater-rock" style={{ left: "65%", width: "28px" }}></div>
+                      <div className="pixel-text text-xs absolute" style={{ left: "20%", top: "30%" }}>
+                        ✨
+                      </div>
+                    </>
+                  )}
+
+                  {tankRank >= 4 && (
+                    <>
+                      <div className="pixel-text text-xs absolute" style={{ left: "40%", top: "20%" }}>
+                        💎
+                      </div>
+                      <div className="pixel-text text-xs absolute" style={{ left: "70%", top: "40%" }}>
+                        🌟
+                      </div>
+                    </>
+                  )}
+
+                  {tankRank >= 5 && (
+                    <>
+                      <div className="pixel-text text-xs absolute" style={{ left: "30%", top: "15%" }}>
+                        👑
+                      </div>
+                      <div className="pixel-text text-xs absolute" style={{ left: "60%", top: "25%" }}>
+                        🏆
+                      </div>
+                      <div className="pixel-text text-xs absolute" style={{ left: "80%", top: "35%" }}>
+                        💫
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </>

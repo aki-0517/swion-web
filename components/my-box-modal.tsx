@@ -32,7 +32,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
           owner: account.address,
           filter: {
             // NFTObjectとSynObjectのパッケージIDを指定
-            Package: "0x0454fbcf280cfef231e998a649d8895dcbbe10db76717fa049db34782cc3eb5b"
+            Package: process.env.NEXT_PUBLIC_PACKAGE_ID ?? "", 
           },
           options: {
             showContent: true,

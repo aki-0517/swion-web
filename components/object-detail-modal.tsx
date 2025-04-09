@@ -66,7 +66,7 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
       
       // Add mint_nft_object move call to the transaction
       tx.moveCall({
-        target: "0x0454fbcf280cfef231e998a649d8895dcbbe10db76717fa049db34782cc3eb5b::nft_system::mint_nft_object",
+        target: process.env.NEXT_PUBLIC_PACKAGE_ID ?? "",
         arguments: [
           // object.name をバイト配列として渡す
           tx.pure.vector("u8", Array.from(new TextEncoder().encode(object.name))),

@@ -14,9 +14,9 @@ interface HeaderProps {
   onWalletSearch: (address: string) => void
 }
 
-const PACKAGE_ID = "0x0454fbcf280cfef231e998a649d8895dcbbe10db76717fa049db34782cc3eb5b"
+const PACKAGE_ID = process.env.NEXT_PUBLIC_PACKAGE_ID
 const NFT_SYSTEM_MODULE = "nft_system"
-const DEFAULT_BACKGROUND = "https://example.com/default_bg.png"
+const DEFAULT_BACKGROUND = "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//DB8829AA-F5CF-4EDA-922E-3C628C5AB593.PNG"
 const DEFAULT_LEVEL = 1
 
 export default function Header({ onWalletSearch }: HeaderProps) {
