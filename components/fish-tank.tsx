@@ -90,7 +90,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           const objects = await suiClient.getOwnedObjects({
             owner: walletAddress,
             filter: {
-              Package: "0x7e9b7f94306f063abcdcbd5375200bd6e3531ee5861e4978cdc5d5d44a76c6f0"
+              Package: process.env.NEXT_PUBLIC_PACKAGE_ID ?? ""
             },
             options: {
               showContent: true,
