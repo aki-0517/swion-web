@@ -58,25 +58,18 @@ export default function ObjectList({ projectId, onSelectObject }: ObjectListProp
 
       setObjects(data || [])
 
-      // 各オブジェクトの画像URLを取得
+      // フルパスの画像URLをそのままマッピング
       const imageUrls: { [key: number]: string } = {}
       for (const object of data || []) {
         if (object.image) {
-          const { data: imageUrl } = supabase
-            .storage
-            .from('nft-objects')
-            .getPublicUrl(object.image)
-          
-          if (imageUrl) {
-            imageUrls[object.id] = imageUrl.publicUrl
-          }
+          imageUrls[object.id] = object.image
         }
       }
       setObjectImages(imageUrls)
     }
 
     fetchObjects()
-  }, [projectId])
+  }, [projectId, toast])
 
   const handleObjectClick = (object: NFTObject) => {
     setSelectedObject(object)
@@ -98,7 +91,7 @@ export default function ObjectList({ projectId, onSelectObject }: ObjectListProp
           className="pixel-card p-4 cursor-pointer"
           onClick={() => handleObjectClick(object)}
         >
-          <div className="w-full aspect-square bg-blue-100 border-2 border-black mb-2 flex items-center justify-center relative">
+          <div className="w-full aspect-square bg-blue-900 border-2 border-black mb-2 flex items-center justify-center relative">
             {objectImages[object.id] ? (
               <Image
                 src={objectImages[object.id]}
@@ -120,4 +113,3 @@ export default function ObjectList({ projectId, onSelectObject }: ObjectListProp
     </div>
   )
 }
-

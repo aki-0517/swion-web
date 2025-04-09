@@ -40,13 +40,9 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
     return `${mintFlag.package}::${mintFlag.module}::${mintFlag.function}`
   }
 
+  // フルパスの画像URLをそのまま返す
   const getImageUrl = () => {
-    const { data } = supabase
-      .storage
-      .from('nft-objects')
-      .getPublicUrl(object.image)
-    
-    return data?.publicUrl
+    return object.image
   }
 
   const handleMint = async () => {
@@ -72,9 +68,9 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
       tx.moveCall({
         target: "0x0454fbcf280cfef231e998a649d8895dcbbe10db76717fa049db34782cc3eb5b::nft_system::mint_nft_object",
         arguments: [
-          // nameをバイト配列として渡す
+          // object.name をバイト配列として渡す
           tx.pure.vector("u8", Array.from(new TextEncoder().encode(object.name))),
-          // imageをバイト配列として渡す
+          // object.image をバイト配列として渡す
           tx.pure.vector("u8", Array.from(new TextEncoder().encode(getImageUrl() || ''))),
         ]
       })
@@ -120,7 +116,7 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
         </DialogHeader>
 
         <div className="mt-4">
-          <div className="w-full aspect-square bg-blue-100 border-2 border-black mb-4 relative">
+          <div className="w-full aspect-square bg-blue-900 border-2 border-black mb-4 relative">
             {object.image && (
               <Image
                 src={getImageUrl() || ''}
