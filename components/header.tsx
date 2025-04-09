@@ -14,7 +14,7 @@ interface HeaderProps {
   onWalletSearch: (address: string) => void
 }
 
-const PACKAGE_ID = "0xe8945f6d94b15e5f91e21ae4c738bc997bc0614f38e3fec839dff6d1cff74564"
+const PACKAGE_ID = "0x0454fbcf280cfef231e998a649d8895dcbbe10db76717fa049db34782cc3eb5b"
 const NFT_SYSTEM_MODULE = "nft_system"
 const DEFAULT_BACKGROUND = "https://example.com/default_bg.png"
 const DEFAULT_LEVEL = 1

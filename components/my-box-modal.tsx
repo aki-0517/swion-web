@@ -6,7 +6,7 @@ import { X, Plus } from "lucide-react"
 import CraftingModal from "./crafting-modal"
 import ObjectActionModal from "./object-action-modal"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from "@/lib/supabaseClient"
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
 
 interface MyBoxModalProps {
   onClose: () => void
@@ -19,71 +19,72 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
   const [showCraftingModal, setShowCraftingModal] = useState(false)
   const [activeTab, setActiveTab] = useState<"all" | "components" | "synObjects">("all")
   const [selectedObject, setSelectedObject] = useState<any | null>(null)
+  const account = useCurrentAccount()
+  const suiClient = useSuiClient()
 
-  // useEffect(() => {
-  //   async function fetchUserObjects() {
-  //     // ユーザーが所有するオブジェクトを取得
-  //     const { data: userObjects, error: objectsError } = await supabase
-  //       .from('user_objects')
-  //       .select(`
-  //         id,
-  //         type,
-  //         name,
-  //         color,
-  //         project_id,
-  //         image
-  //       `)
-  //       .eq('owner_address', 'current_user_address') // 実際のウォレットアドレスを使用
+  useEffect(() => {
+    async function fetchUserObjects() {
+      if (!account?.address) return
 
-  //     if (objectsError) {
-  //       toast({
-  //         title: "Error",
-  //         description: "Failed to load your objects",
-  //         variant: "destructive",
-  //       })
-  //       return
-  //     }
+      try {
+        // ウォレットアドレスが所有するオブジェクトを取得
+        const objects = await suiClient.getOwnedObjects({
+          owner: account.address,
+          filter: {
+            // NFTObjectとSynObjectのパッケージIDを指定
+            Package: "0x0454fbcf280cfef231e998a649d8895dcbbe10db76717fa049db34782cc3eb5b"
+          },
+          options: {
+            showContent: true,
+            showType: true
+          }
+        })
 
-  //     // Syn objectsを取得
-  //     const { data: synObjects, error: synError } = await supabase
-  //       .from('syn_objects')
-  //       .select(`
-  //         id,
-  //         name,
-  //         components,
-  //         image
-  //       `)
-  //       .eq('owner_address', 'current_user_address') // 実際のウォレットアドレスを使用
+        // 取得したオブジェクトをフォーマット
+        const formattedObjects = objects.data
+          .map(obj => {
+            const content = obj.data?.content as any
+            const fields = content?.fields || {}
+            const type = obj.data?.type as string
 
-  //     if (synError) {
-  //       toast({
-  //         title: "Error",
-  //         description: "Failed to load syn objects",
-  //         variant: "destructive",
-  //       })
-  //       return
-  //     }
+            // WaterTankオブジェクトを除外
+            if (type.includes("WaterTank")) {
+              return null
+            }
 
-  //     // 両方のオブジェクトを結合
-  //     const allObjects = [
-  //       ...userObjects,
-  //       ...(synObjects?.map(syn => ({
-  //         ...syn,
-  //         type: 'synObject'
-  //       })) || [])
-  //     ]
+            // オブジェクトの種類を判定
+            const isNFTObject = type.includes("NFTObject")
+            const isSynObject = type.includes("SynObject")
 
-  //     setObjects(allObjects)
-  //   }
+            return {
+              id: obj.data?.objectId,
+              type: isNFTObject ? "nft" : isSynObject ? "synObject" : "unknown",
+              name: fields.name || "Unnamed Object",
+              image: fields.image || "",
+              position_x: fields.position_x || 0,
+              position_y: fields.position_y || 0,
+              owner: fields.owner
+            }
+          })
+          .filter(obj => obj !== null) // nullのオブジェクト（WaterTank）を除外
 
-  //   fetchUserObjects()
-  // }, [])
+        setObjects(formattedObjects)
+      } catch (error) {
+        console.error("Error fetching objects:", error)
+        toast({
+          title: "エラー",
+          description: "オブジェクトの読み込みに失敗しました",
+          variant: "destructive",
+        })
+      }
+    }
 
-  // For tank drag and drop
+    fetchUserObjects()
+  }, [account?.address, suiClient])
+
+  // 以下、ドラッグ＆ドロップやその他のハンドラー等
   const handleDragStart = (e: React.DragEvent, object: any) => {
     e.dataTransfer.setData("application/json", JSON.stringify(object))
-
-    // Create a custom drag image that shows only the object
     const dragImage = document.createElement("div")
     dragImage.className = "w-12 h-12 relative"
 
@@ -115,10 +116,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
     document.body.appendChild(dragImage)
     dragImage.style.position = "absolute"
     dragImage.style.top = "-1000px"
-
     e.dataTransfer.setDragImage(dragImage, 20, 20)
-
-    // Clean up the temporary element after a short delay
     setTimeout(() => {
       document.body.removeChild(dragImage)
     }, 100)
@@ -126,7 +124,6 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
 
   // For synthesis selection
   const toggleObjectSelection = (object: any) => {
-    // Only allow ComponentObjects for synthesis, not SynObjects
     if (object.type === "synObject") {
       toast({
         title: "Cannot Select",
@@ -136,14 +133,11 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
       return
     }
 
-    // Check if already selected
     const isSelected = selectedForSynthesis.some((item) => item.id === object.id)
 
     if (isSelected) {
-      // Remove from selection
       setSelectedForSynthesis(selectedForSynthesis.filter((item) => item.id !== object.id))
     } else {
-      // Add to selection if less than 3 items are selected
       if (selectedForSynthesis.length < 3) {
         setSelectedForSynthesis([...selectedForSynthesis, object])
       } else {
@@ -165,32 +159,23 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
       })
       return
     }
-
     setShowCraftingModal(true)
   }
 
   const handleSynthesisComplete = (result: any) => {
-    // Add the new SynObject to the objects list
     const newSynObject = {
-      id: Date.now(), // Generate a unique ID
+      id: Date.now(), // 一意のIDを生成
       type: "synObject",
       name: result.name,
       components: selectedForSynthesis.map((obj) => obj.id),
       image: result.image,
       rarity: result.rarity,
-      projectId: selectedForSynthesis[0].projectId, // Use the first object's project ID
+      projectId: selectedForSynthesis[0].projectId, // 最初のオブジェクトの projectId を使用
     }
 
-    // Remove the used ComponentObjects
     const remainingObjects = objects.filter((obj) => !selectedForSynthesis.some((selected) => selected.id === obj.id))
-
-    // Add the new SynObject
     setObjects([...remainingObjects, newSynObject])
-
-    // Clear selection
     setSelectedForSynthesis([])
-
-    // Close the crafting modal
     setShowCraftingModal(false)
 
     toast({
@@ -199,7 +184,6 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
     })
   }
 
-  // Filter objects based on active tab
   const filteredObjects = objects.filter((obj) => {
     if (activeTab === "all") return true
     if (activeTab === "components") return obj.type !== "synObject"
@@ -209,39 +193,26 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
 
   const [draggedObject, setDraggedObject] = useState<any | null>(null)
   const [dropTargetObject, setDropTargetObject] = useState<any | null>(null)
-
-  // Track which card is being dragged
   const draggedCardRef = useRef<HTMLDivElement | null>(null)
 
   const handleDragOver = (e: React.DragEvent, object: any) => {
     e.preventDefault()
-
-    // Don't allow dropping on the same card that's being dragged
     if (draggedCardRef.current === e.currentTarget) {
       return
     }
-
-    // Highlight the drop target
     e.currentTarget.classList.add("border-yellow-400", "border-4")
   }
 
   const handleDragLeave = (e: React.DragEvent) => {
-    // Remove highlight
     e.currentTarget.classList.remove("border-yellow-400", "border-4")
   }
 
   const handleDrop = (e: React.DragEvent, targetObject: any) => {
     e.preventDefault()
-
-    // Remove highlight
     e.currentTarget.classList.remove("border-yellow-400", "border-4")
-
-    // Don't allow dropping on the same card that's being dragged
     if (draggedCardRef.current === e.currentTarget) {
       return
     }
-
-    // Set the drop target and show the crafting modal
     setDropTargetObject(targetObject)
     setShowCraftingModal(true)
   }
@@ -257,7 +228,6 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
     }
   }
 
-  // Add the publish handler
   const handlePublishSynObject = () => {
     if (selectedObject && selectedObject.type === "synObject") {
       toast({
@@ -270,7 +240,6 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="fixed inset-0 bg-black/50" onClick={onClose}></div>
-
       <div className="relative w-1/3 h-full bg-white border-r-4 border-black overflow-auto">
         <div className="sticky top-0 bg-blue-500 border-b-4 border-black p-4 flex justify-between items-center">
           <h2 className="pixel-text text-white text-lg">MyBox</h2>
@@ -324,28 +293,16 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                 >
                   {obj.type === "fish" && (
                     <div className="w-8 h-6 relative">
-                      <div
-                        className="absolute w-3 h-3"
-                        style={{ left: "0px", top: "1px", backgroundColor: obj.color }}
-                      ></div>
-                      <div
-                        className="absolute w-3 h-3"
-                        style={{ left: "3px", top: "0px", backgroundColor: obj.color }}
-                      ></div>
+                      <div className="absolute w-3 h-3" style={{ left: "0px", top: "1px", backgroundColor: obj.color }}></div>
+                      <div className="absolute w-3 h-3" style={{ left: "3px", top: "0px", backgroundColor: obj.color }}></div>
                       <div className="absolute w-1 h-1 bg-black" style={{ left: "4px", top: "1px" }}></div>
                     </div>
                   )}
 
                   {obj.type === "plant" && (
                     <div className="w-6 h-10 relative">
-                      <div
-                        className="absolute w-1 h-6"
-                        style={{ left: "2px", top: "4px", backgroundColor: obj.color }}
-                      ></div>
-                      <div
-                        className="absolute w-1 h-5"
-                        style={{ left: "1px", top: "2px", backgroundColor: obj.color }}
-                      ></div>
+                      <div className="absolute w-1 h-6" style={{ left: "2px", top: "4px", backgroundColor: obj.color }}></div>
+                      <div className="absolute w-1 h-5" style={{ left: "1px", top: "2px", backgroundColor: obj.color }}></div>
                     </div>
                   )}
 
@@ -400,28 +357,16 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                 <div className="w-full aspect-square bg-blue-100 mb-2 flex items-center justify-center">
                   {object.type === "fish" && (
                     <div className="w-12 h-8 relative">
-                      <div
-                        className="absolute w-4 h-4"
-                        style={{ left: "0px", top: "2px", backgroundColor: object.color }}
-                      ></div>
-                      <div
-                        className="absolute w-4 h-4"
-                        style={{ left: "4px", top: "0px", backgroundColor: object.color }}
-                      ></div>
+                      <div className="absolute w-4 h-4" style={{ left: "0px", top: "2px", backgroundColor: object.color }}></div>
+                      <div className="absolute w-4 h-4" style={{ left: "4px", top: "0px", backgroundColor: object.color }}></div>
                       <div className="absolute w-2 h-2 bg-black" style={{ left: "6px", top: "2px" }}></div>
                     </div>
                   )}
 
                   {object.type === "plant" && (
                     <div className="w-8 h-12 relative">
-                      <div
-                        className="absolute w-2 h-8"
-                        style={{ left: "3px", top: "4px", backgroundColor: object.color }}
-                      ></div>
-                      <div
-                        className="absolute w-2 h-6"
-                        style={{ left: "1px", top: "2px", backgroundColor: object.color }}
-                      ></div>
+                      <div className="absolute w-2 h-8" style={{ left: "3px", top: "4px", backgroundColor: object.color }}></div>
+                      <div className="absolute w-2 h-6" style={{ left: "1px", top: "2px", backgroundColor: object.color }}></div>
                     </div>
                   )}
 
@@ -432,6 +377,9 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                   )}
 
                   {object.type === "synObject" && <div className="text-4xl">{object.image}</div>}
+                  {object.type === "nft" && (
+                    <img src={object.image} alt={object.name} className="w-full h-full object-contain" />
+                  )}
                 </div>
 
                 <div className="pixel-text text-xs">{object.name}</div>
@@ -458,7 +406,6 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                   )}
                 </div>
 
-                {/* Project badge */}
                 {object.projectId && (
                   <div className="mt-1 text-xs bg-gray-100 px-1 inline-block">
                     Project: {object.projectId.replace("project", "")}
@@ -492,4 +439,3 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
     </div>
   )
 }
-
