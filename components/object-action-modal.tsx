@@ -7,6 +7,7 @@ interface ObjectActionModalProps {
   object: any
   onAddToSynthesis: () => void
   onClose: () => void
+  onPlaceInTank: (object: any) => void
   canAddToSynthesis: boolean
   onPublish?: () => void
 }
@@ -15,15 +16,47 @@ export default function ObjectActionModal({
   object,
   onAddToSynthesis,
   onClose,
+  onPlaceInTank,
   canAddToSynthesis,
   onPublish,
 }: ObjectActionModalProps) {
   const { toast } = useToast()
 
   const handleDragToTank = () => {
+    const dragObject = {
+      id: Date.now(),
+      type: "nft",
+      name: object.name,
+      image: object.image,
+      x: 50,
+      y: 50
+    }
+
+    const event = new DragEvent("dragstart")
+    event.dataTransfer?.setData("application/json", JSON.stringify(dragObject))
+
     toast({
-      title: "Ready to Place",
-      description: "Drag the object from MyBox to your tank",
+      title: "タンクに配置準備完了",
+      description: "MyBoxからタンクにドラッグしてください",
+    })
+    onClose()
+  }
+
+  const handlePlaceInTank = () => {
+    const nftObject = {
+      id: Date.now(),
+      type: "nft",
+      name: object.name,
+      image: object.image,
+      x: 50,
+      y: 50
+    }
+
+    onPlaceInTank(nftObject)
+    
+    toast({
+      title: "タンクに配置完了",
+      description: "NFTをドラッグして位置を調整できます",
     })
     onClose()
   }
@@ -128,7 +161,10 @@ export default function ObjectActionModal({
               </button>
             )}
 
-            <button onClick={handleDragToTank} className="game-button w-full py-2 bg-green-500">
+            <button 
+              onClick={handlePlaceInTank} 
+              className="game-button w-full py-2 bg-green-500"
+            >
               Place in Tank
             </button>
           </div>

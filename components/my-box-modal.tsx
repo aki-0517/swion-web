@@ -237,6 +237,22 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
     }
   }
 
+  // タンクにオブジェクトを配置する関数
+  const handlePlaceInTank = (object: any) => {
+    // FishTankコンポーネントにオブジェクトを渡す
+    // グローバルステートまたはコンテキストを使用して実装
+    // 例: Zustand, React Context, etc.
+    
+    // 仮の実装として、イベントをディスパッチ
+    const event = new CustomEvent('placeInTank', { detail: object })
+    window.dispatchEvent(event)
+    
+    toast({
+      title: "タンクに配置準備完了",
+      description: "NFTをドラッグして位置を調整できます",
+    })
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="fixed inset-0 bg-black/50" onClick={onClose}></div>
@@ -430,10 +446,11 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
       {selectedObject && (
         <ObjectActionModal
           object={selectedObject}
-          onAddToSynthesis={handleAddToSynthesis}
           onClose={() => setSelectedObject(null)}
-          canAddToSynthesis={selectedObject.type !== "synObject"}
+          onAddToSynthesis={handleAddToSynthesis}
           onPublish={handlePublishSynObject}
+          onPlaceInTank={handlePlaceInTank}
+          canAddToSynthesis={selectedObject.type !== "synObject"}
         />
       )}
     </div>

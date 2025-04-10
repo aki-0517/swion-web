@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Fish, Plant, Decoration } from "@/components/tank-objects"
 import { Save, TrendingUp } from "lucide-react"
@@ -17,6 +17,7 @@ interface FishTankProps {
 export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const [objects, setObjects] = useState<any[]>([])
   const [hasChanges, setHasChanges] = useState(false)
+  const [objectPositions, setObjectPositions] = useState<{ [key: string]: { x: number, y: number } }>({})
   const { toast } = useToast()
   const [tankBackground, setTankBackground] = useState<string>("")
   const suiClient = useSuiClient()
@@ -125,50 +126,67 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
     fetchWaterTankSBT()
   }, [walletAddress, suiClient])
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
+  // タンクにオブジェクトを配置するイベントリスナー
+  useEffect(() => {
+    const handlePlaceInTank = (event: CustomEvent) => {
+      if (!isOwner) {
+        toast({
+          title: "Error",
+          description: "Cannot place objects in someone else's tank",
+          variant: "destructive",
+        })
+        return
+      }
 
-    if (!isOwner) {
-      toast({
-        title: "Error",
-        description: "This is someone else's tank.",
-        variant: "destructive",
-      })
-      return
+      const object = event.detail
+      const newId = `${object.type}_${Date.now()}`
+      const newObject = {
+        ...object,
+        id: newId,
+        x: 50, // Center position
+        y: 50
+      }
+
+      setObjects(prev => [...prev, newObject])
+      setObjectPositions(prev => ({
+        ...prev,
+        [newId]: { x: 50, y: 50 }
+      }))
+      setHasChanges(true)
     }
 
-    const objectData = JSON.parse(e.dataTransfer.getData("application/json"))
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = ((e.clientX - rect.left) / rect.width) * 100
-    const y = ((e.clientY - rect.top) / rect.height) * 100
+    window.addEventListener('placeInTank', handlePlaceInTank as EventListener)
+    return () => {
+      window.removeEventListener('placeInTank', handlePlaceInTank as EventListener)
+    }
+  }, [isOwner, toast])
 
-    setObjects([...objects, { ...objectData, x, y }])
-    setHasChanges(true)
-
-    toast({
-      title: "Placement Complete",
-      description: `Placed ${objectData.name || objectData.type}`,
-    })
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-  }
-
-  const handleObjectMove = (id: number, newX: number, newY: number) => {
+  // オブジェクトの移動を処理
+  const handleObjectMove = (id: string, newX: number, newY: number) => {
     if (!isOwner) return
 
-    setObjects(objects.map((obj) => (obj.id === id ? { ...obj, x: newX, y: newY } : obj)))
+    setObjectPositions(prev => ({
+      ...prev,
+      [id]: { x: newX, y: newY }
+    }))
     setHasChanges(true)
   }
 
-  const handleSave = () => {
-    // In a real app, this would save to the blockchain
-    toast({
-      title: "Tank Saved",
-      description: "Your tank layout has been saved",
-    })
-    setHasChanges(false)
+  const handleSave = async () => {
+    try {
+      // TODO: Save layout to backend/blockchain
+      toast({
+        title: "Layout Saved",
+        description: "Your tank layout has been saved successfully",
+      })
+      setHasChanges(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save tank layout",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleUpgrade = () => {
@@ -192,44 +210,35 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
     <div className="w-full max-w-4xl mx-auto">
       <div className="pixel-container p-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="pixel-text text-xl">{walletAddress ? `${walletAddress}'s Tank` : "Display Tank"}</h2>
+          <h2 className="pixel-text text-xl">
+            {walletAddress ? `${walletAddress}'s Tank` : "Display Tank"}
+          </h2>
 
-          <div className="flex items-center gap-2">
-            {hasChanges && isOwner && (
-              <button onClick={handleSave} className="game-button px-4 py-1 flex items-center gap-1">
-                <Save size={16} />
-                <span>Save Layout</span>
-              </button>
-            )}
-
-            {walletAddress && (
-              <div className="flex items-center">
-                <div className="bg-gray-200 border-2 border-black p-1 flex items-center">
-                  <div className="pixel-text text-xs mr-2">Rank {tankRank}</div>
-                  <div className="w-24 h-4 bg-gray-300 border border-black">
-                    <div className="h-full bg-blue-500" style={{ width: `${progressToNextRank}%` }}></div>
-                  </div>
-                  {canUpgrade ? (
-                    <button
-                      onClick={handleUpgrade}
-                      className="game-button ml-2 px-2 py-1 flex items-center gap-1 bg-green-500"
-                    >
-                      <TrendingUp size={12} />
-                      <span className="text-xs">Upgrade</span>
-                    </button>
-                  ) : (
-                    <div className="ml-2 text-xs">{txToNextRank} TX to next rank</div>
-                  )}
+          {walletAddress && (
+            <div className="flex items-center">
+              <div className="bg-gray-200 border-2 border-black p-1 flex items-center">
+                <div className="pixel-text text-xs mr-2">Rank {tankRank}</div>
+                <div className="w-24 h-4 bg-gray-300 border border-black">
+                  <div className="h-full bg-blue-500" style={{ width: `${progressToNextRank}%` }}></div>
                 </div>
+                {canUpgrade ? (
+                  <button
+                    onClick={handleUpgrade}
+                    className="game-button ml-2 px-2 py-1 flex items-center gap-1 bg-green-500"
+                  >
+                    <TrendingUp size={12} />
+                    <span className="text-xs">Upgrade</span>
+                  </button>
+                ) : (
+                  <div className="ml-2 text-xs">{txToNextRank} TX to next rank</div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div
           className={`fish-tank w-full h-[400px] relative rank-${tankRank}`}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
           style={{
             backgroundImage: tankBackground ? `url(${tankBackground})` : undefined,
             backgroundSize: 'cover',
@@ -351,6 +360,24 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                   <div className="text-4xl">{obj.image}</div>
                 </DraggableObject>
               )
+            } else if (obj.type === "nft") {
+              const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
+              return (
+                <DraggableObject
+                  key={obj.id}
+                  id={obj.id}
+                  x={position.x}
+                  y={position.y}
+                  isOwner={isOwner}
+                  onMove={handleObjectMove}
+                >
+                  <img 
+                    src={obj.image} 
+                    alt={obj.name} 
+                    className="w-32 h-32 object-contain"
+                  />
+                </DraggableObject>
+              )
             }
             return null
           })}
@@ -369,81 +396,97 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
               : "Drag placed objects to reposition them"}
           </div>
         )}
+
+        {isOwner && hasChanges && (
+          <div className="flex justify-end mt-4">
+            <button 
+              onClick={handleSave}
+              className="game-button px-4 py-2 flex items-center gap-2 bg-green-500"
+            >
+              <Save size={16} />
+              <span>Save Layout</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 interface DraggableObjectProps {
-  id: number
+  id: string
   x: number
   y: number
   isOwner: boolean
   children: React.ReactNode
-  onMove: (id: number, x: number, y: number) => void
+  onMove: (id: string, x: number, y: number) => void
 }
 
 function DraggableObject({ id, x, y, isOwner, children, onMove }: DraggableObjectProps) {
   const [isDragging, setIsDragging] = useState(false)
+  const elementRef = useRef<HTMLDivElement>(null)
+  const dragDataRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 })
 
   const handleDragStart = (e: React.DragEvent) => {
-    if (!isOwner) {
+    if (!isOwner || !elementRef.current) {
       e.preventDefault()
       return
     }
 
-    setIsDragging(true)
-    // Store the initial mouse position relative to the object
-    const rect = e.currentTarget.getBoundingClientRect()
-    const offsetX = e.clientX - rect.left
-    const offsetY = e.clientY - rect.top
+    // ドラッグ時のゴーストイメージを非表示にする
+    const img = new Image()
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    e.dataTransfer.setDragImage(img, 0, 0)
 
-    e.dataTransfer.setData(
-      "text/plain",
-      JSON.stringify({
-        id,
-        offsetX,
-        offsetY,
-      }),
-    )
+    setIsDragging(true)
+    
+    const rect = elementRef.current.getBoundingClientRect()
+    dragDataRef.current = {
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top
+    }
   }
 
-  const handleDragEnd = (e: React.DragEvent) => {
-    setIsDragging(false)
+  const handleDrag = (e: React.DragEvent) => {
+    if (!isOwner || !e.currentTarget.parentElement || !e.clientX || !e.clientY) return
+    e.preventDefault()
 
-    if (!isOwner) return
+    const tankRect = e.currentTarget.parentElement.getBoundingClientRect()
+    
+    const newX = ((e.clientX - dragDataRef.current.offsetX - tankRect.left) / tankRect.width) * 100
+    const newY = ((e.clientY - dragDataRef.current.offsetY - tankRect.top) / tankRect.height) * 100
 
-    const tankElement = e.currentTarget.parentElement
-    if (!tankElement) return
-
-    const tankRect = tankElement.getBoundingClientRect()
-    const data = JSON.parse(e.dataTransfer.getData("text/plain"))
-
-    // Calculate new position
-    const newX = ((e.clientX - data.offsetX - tankRect.left) / tankRect.width) * 100
-    const newY = ((e.clientY - data.offsetY - tankRect.top) / tankRect.height) * 100
-
-    // Ensure the object stays within bounds
+    // 範囲を0-100に制限
     const boundedX = Math.max(0, Math.min(100, newX))
     const boundedY = Math.max(0, Math.min(100, newY))
 
     onMove(id, boundedX, boundedY)
   }
 
+  const handleDragEnd = () => {
+    setIsDragging(false)
+  }
+
   return (
     <div
-      className={`absolute ${isOwner ? "cursor-move" : ""} ${isDragging ? "opacity-50" : ""}`}
+      ref={elementRef}
+      className={`absolute cursor-move ${isDragging ? 'opacity-50' : ''}`}
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        transform: "translate(-50%, -50%)",
+        transform: 'translate(-50%, -50%)',
         zIndex: isDragging ? 10 : 1,
+        touchAction: 'none',
+        padding: '8px',
       }}
       draggable={isOwner}
       onDragStart={handleDragStart}
+      onDrag={handleDrag}
       onDragEnd={handleDragEnd}
     >
-      {children}
+      <div className="w-32 h-32 flex items-center justify-center">
+        {children}
+      </div>
     </div>
   )
 }
