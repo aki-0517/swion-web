@@ -16,7 +16,7 @@ interface HeaderProps {
 
 const PACKAGE_ID = process.env.NEXT_PUBLIC_PACKAGE_ID
 const NFT_SYSTEM_MODULE = "nft_system"
-const DEFAULT_BACKGROUND = "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//DB8829AA-F5CF-4EDA-922E-3C628C5AB593.PNG"
+const DEFAULT_BACKGROUND = "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/swion//DB8829AA-F5CF-4EDA-922E-3C628C5AB593.PNG"
 const DEFAULT_LEVEL = 1
 
 export default function Header({ onWalletSearch }: HeaderProps) {
@@ -143,7 +143,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
       <div className="container mx-auto px-4 h-14 flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <Link href="/" className="pixel-text text-xl">
-            Suiden
+            Swion
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/explore" className="pixel-text text-sm">

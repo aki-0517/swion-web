@@ -8,7 +8,7 @@ import ClientProviders from "@/components/clientProviders";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "suiden",
+  title: "swion",
   description: "Interactive DeFi aquarium dashboard",
   generator: "v0.dev",
 };
