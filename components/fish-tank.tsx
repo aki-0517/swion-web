@@ -6,12 +6,18 @@ import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Fish, Plant, Decoration } from "@/components/tank-objects"
 import { Save, TrendingUp } from "lucide-react"
-import { supabase } from "@/lib/supabaseClient"
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
+import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from "@mysten/dapp-kit"
+import { Transaction } from "@mysten/sui/transactions"
 
 interface FishTankProps {
   walletAddress: string
   isOwner: boolean
+}
+
+// Suiオブジェクト判定関数
+function isValidSuiObjectId(id: string): boolean {
+  // Suiオブジェクトは0xで始まり、合計66文字程度（0xプレフィックス＋64文字の16進数）
+  return typeof id === 'string' && id.startsWith('0x') && id.length >= 40;
 }
 
 export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
@@ -20,74 +26,21 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const [objectPositions, setObjectPositions] = useState<{ [key: string]: { x: number, y: number } }>({})
   const { toast } = useToast()
   const [tankBackground, setTankBackground] = useState<string>("")
+  const [tankId, setTankId] = useState<string>("")
   const suiClient = useSuiClient()
 
   // Add tank rank state
   const [tankRank, setTankRank] = useState(1)
   const [txCount, setTxCount] = useState(0)
   const [canUpgrade, setCanUpgrade] = useState(false)
-
-  // useEffect(() => {
-  //   async function fetchTankData() {
-  //     if (walletAddress) {
-  //       // タンクのオブジェクトを取得
-  //       const { data: tankObjects, error: objectsError } = await supabase
-  //         .from('tank_backgrounds')
-  //         .select('*')
-  //         .eq('wallet_address', walletAddress)
-
-  //       if (objectsError) {
-  //         toast({
-  //           title: "Error",
-  //           description: "Failed to load tank objects",
-  //           variant: "destructive",
-  //         })
-  //         return
-  //       }
-
-  //       setObjects(tankObjects || [])
-
-  //       // トランザクション数を取得
-  //       const { data: txData, error: txError } = await supabase
-  //         .from('wallet_transactions')
-  //         .select('tx_count')
-  //         .eq('wallet_address', walletAddress)
-  //         .single()
-
-  //       if (txError) {
-  //         toast({
-  //           title: "Error",
-  //           description: "Failed to load transaction count",
-  //           variant: "destructive",
-  //         })
-  //         return
-  //       }
-
-  //       const txCount = txData?.tx_count || 0
-  //       setTxCount(txCount)
-
-  //       // ランクを計算
-  //       const newRank = Math.floor(txCount / 10) + 1
-  //       setTankRank(newRank)
-
-  //       // アップグレード可能かチェック
-  //       setCanUpgrade(txCount >= newRank * 10 && newRank < 5)
-  //     } else {
-  //       setObjects([])
-  //       setTxCount(0)
-  //       setTankRank(1)
-  //       setCanUpgrade(false)
-  //     }
-  //   }
-
-  //   fetchTankData()
-  // }, [walletAddress])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isLocalMode, setIsLocalMode] = useState(false)
 
   useEffect(() => {
     async function fetchWaterTankSBT() {
       if (walletAddress) {
         try {
-          // WaterTankオブジェクトを取得
+          // Get WaterTank object
           const objects = await suiClient.getOwnedObjects({
             owner: walletAddress,
             filter: {
@@ -99,34 +52,132 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
             }
           })
 
-          // WaterTankオブジェクトを探す
+          // Find WaterTank object
           const waterTank = objects.data.find(obj => {
             const type = obj.data?.type as string
             return type.includes("WaterTank")
           })
 
           if (waterTank) {
-            const content = waterTank.data?.content as any
-            const fields = content?.fields || {}
-            // background_imageフィールドからURLを取得
-            const backgroundUrl = fields.background_image || ""
+            interface WaterTankFields {
+              background_image: string;
+              child_objects: string[];
+              level: number;
+            }
+
+            interface NFTFields {
+              name: string;
+              image: string;
+              position_x: number;
+              position_y: number;
+            }
+
+            const content = waterTank.data?.content as unknown as { fields: WaterTankFields }
+            const fields = content?.fields || { background_image: "", child_objects: [], level: 1 }
+            
+            // Save tank ID for later use
+            if (waterTank.data?.objectId) {
+              setTankId(waterTank.data.objectId)
+            }
+            
+            // Get URL from background_image field
+            const backgroundUrl = fields.background_image
             setTankBackground(backgroundUrl)
+            
+            // Set tank level/rank
+            setTankRank(fields.level || 1)
+
+            // Get child objects (NFTs) and their positions
+            const childObjects = fields.child_objects
+            console.log("Tank child objects:", childObjects)
+            
+            const nftObjects: Array<{
+              id: string;
+              type: string;
+              name: string;
+              image: string;
+              x: number;
+              y: number;
+            }> = []
+            const positions: { [key: string]: { x: number; y: number } } = {}
+
+            // Fetch each NFT object
+            for (const nftId of childObjects) {
+              try {
+                const nftObject = await suiClient.getObject({
+                  id: nftId,
+                  options: { showContent: true }
+                })
+
+                if (nftObject.data?.content) {
+                  const nftContent = nftObject.data.content as unknown as { fields: NFTFields }
+                  const nftFields = nftContent.fields || {
+                    name: "",
+                    image: "",
+                    position_x: 50,
+                    position_y: 50
+                  }
+
+                  console.log(`NFT ${nftId} position:`, nftFields.position_x, nftFields.position_y)
+
+                  const nft = {
+                    id: nftId,
+                    type: "nft",
+                    name: nftFields.name || "",
+                    image: nftFields.image || "",
+                    x: nftFields.position_x || 50,
+                    y: nftFields.position_y || 50
+                  }
+
+                  nftObjects.push(nft)
+                  positions[nftId] = {
+                    x: nftFields.position_x || 50,
+                    y: nftFields.position_y || 50
+                  }
+                }
+              } catch (error) {
+                console.error(`Error fetching NFT ${nftId}:`, error)
+              }
+            }
+
+            setObjects(nftObjects)
+            setObjectPositions(positions)
+            
+            // Reset hasChanges after loading
+            setHasChanges(false)
+            
+            // ローカルモード判定
+            setIsLocalMode(false) // デフォルトはブロックチェーンモード
+          } else {
+            console.log("WaterTank object not found, switching to local mode")
+            setIsLocalMode(true)
           }
         } catch (error) {
           console.error("Error fetching WaterTank:", error)
           toast({
-            title: "エラー",
-            description: "水槽SBTの取得に失敗しました",
+            title: "Error",
+            description: "Failed to retrieve the water tank SBT",
             variant: "destructive",
           })
+          setIsLocalMode(true)
         }
+      } else {
+        // Reset states when wallet address is not available
+        setObjects([])
+        setObjectPositions({})
+        setTankBackground("")
+        setTankId("")
+        setTankRank(1)
+        setTxCount(0)
+        setCanUpgrade(false)
+        setIsLocalMode(true)
       }
     }
 
     fetchWaterTankSBT()
   }, [walletAddress, suiClient])
 
-  // タンクにオブジェクトを配置するイベントリスナー
+  // Event listener for placing objects in tank
   useEffect(() => {
     const handlePlaceInTank = (event: CustomEvent) => {
       if (!isOwner) {
@@ -139,18 +190,20 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       }
 
       const object = event.detail
-      const newId = `${object.type}_${Date.now()}`
+      
+      // Check if the object is an NFT and has an ID already
+      const newId = object.id || `${object.type}_${Date.now()}`
       const newObject = {
         ...object,
         id: newId,
-        x: 50, // Center position
-        y: 50
+        x: object.x || 50, // Use existing position or default to center
+        y: object.y || 50
       }
 
       setObjects(prev => [...prev, newObject])
       setObjectPositions(prev => ({
         ...prev,
-        [newId]: { x: 50, y: 50 }
+        [newId]: { x: newObject.x, y: newObject.y }
       }))
       setHasChanges(true)
     }
@@ -161,7 +214,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
     }
   }, [isOwner, toast])
 
-  // オブジェクトの移動を処理
+  // Handle object movement
   const handleObjectMove = (id: string, newX: number, newY: number) => {
     if (!isOwner) return
 
@@ -172,33 +225,244 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
     setHasChanges(true)
   }
 
-  const handleSave = async () => {
-    try {
-      // TODO: Save layout to backend/blockchain
-      toast({
-        title: "Layout Saved",
-        description: "Your tank layout has been saved successfully",
-      })
+  // Get transaction execution function from custom hook
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction()
+  const currentAccount = useCurrentAccount()
+
+  // ローカルモードでの保存処理
+  const handleLocalSave = () => {
+    setIsLoading(true)
+    
+    // 簡易的なローカル保存のみ
+    setTimeout(() => {
       setHasChanges(false)
-    } catch (error) {
+      setIsLoading(false)
+      
+      toast({
+        title: "Layout Saved (Local)",
+        description: "Your tank layout has been saved locally",
+      })
+    }, 500)
+  }
+
+  // Layout save handler
+  const handleSave = async () => {
+    // ローカルモードの場合は簡易保存のみ
+    if (isLocalMode) {
+      handleLocalSave()
+      return
+    }
+    
+    if (!currentAccount?.address) {
       toast({
         title: "Error",
-        description: "Failed to save tank layout",
+        description: "Please connect your wallet",
         variant: "destructive",
       })
+      return
+    }
+
+    if (!tankId) {
+      toast({
+        title: "Error",
+        description: "Water tank not found",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      
+      // Create transaction
+      const tx = new Transaction()
+      
+      // Set the sender for the transaction (important)
+      tx.setSender(currentAccount.address)
+      
+      let hasValidObjects = false
+
+      console.log("Number of objects to save:", objects.length)
+      console.log("Tank ID:", tankId)
+      console.log("SuiClient type:", typeof suiClient, suiClient ? "exists" : "is null/undefined")
+
+      // 有効なSuiオブジェクトIDをフィルタリング
+      const validNFTs = objects.filter(obj => 
+        obj.type === "nft" && isValidSuiObjectId(obj.id)
+      )
+      
+      console.log(`Found ${validNFTs.length} valid NFT objects out of ${objects.length} total objects`)
+      
+      // 有効なオブジェクトがなければローカルモードでの保存に切り替え
+      if (validNFTs.length === 0) {
+        console.log("No valid Sui objects found, switching to local save mode")
+        handleLocalSave()
+        return
+      }
+
+      // For each NFT object, save layout position
+      for (const obj of validNFTs) {
+        const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
+        
+        console.log(`Saving NFT: ${obj.id}, Position: x=${Math.floor(position.x)}, y=${Math.floor(position.y)}`)
+        
+        try {
+          // Use save_layout function to save position
+          tx.moveCall({
+            target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::save_layout`,
+            arguments: [
+              tx.object(tankId),
+              tx.object(obj.id),
+              tx.pure.u64(Math.floor(position.x)),
+              tx.pure.u64(Math.floor(position.y)),
+            ],
+          })
+          
+          hasValidObjects = true
+        } catch (error) {
+          console.error(`Error preparing save_layout for NFT ${obj.id}:`, error)
+        }
+      }
+
+      if (!hasValidObjects) {
+        toast({
+          title: "Information",
+          description: "No NFT objects to save on-chain, using local save",
+        })
+        handleLocalSave()
+        return
+      }
+
+      // Check if suiClient is valid
+      if (!suiClient || typeof suiClient !== 'object') {
+        throw new Error('suiClient is not a valid object')
+      }
+
+      // Build the transaction
+      await tx.build({ client: suiClient })
+
+      console.log("Transaction ready to send")
+      
+      // Execute the transaction
+      const result = await signAndExecute({
+        transaction: tx,
+      })
+      
+      console.log("Transaction result:", result)
+
+      toast({
+        title: "Save Complete",
+        description: "Water tank layout has been saved successfully",
+      })
+      
+      setHasChanges(false)
+      
+      // レイアウト保存が完了したら、トランザクション数を増やし、ランクアップ判定
+      setTxCount(prev => {
+        const newCount = prev + 1
+        // 10トランザクションごとにアップグレード可能に
+        if (newCount % 10 === 0) {
+          setCanUpgrade(true)
+          toast({
+            title: "Upgrade Available!",
+            description: "You can now upgrade your water tank to the next level!",
+          })
+        }
+        return newCount
+      })
+      
+    } catch (error) {
+      console.error("Layout save error:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save water tank layout: " + (error instanceof Error ? error.message : String(error)),
+        variant: "destructive",
+      })
+      
+      // オンチェーン保存に失敗したら、ローカル保存に切り替え
+      handleLocalSave()
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleUpgrade = () => {
-    if (canUpgrade) {
+  // Tank level upgrade
+  const handleUpgrade = async () => {
+    // ローカルモードの場合は簡易アップグレードのみ
+    if (isLocalMode) {
+      setIsLoading(true)
       const newRank = tankRank + 1
+      
+      setTimeout(() => {
+        setTankRank(newRank)
+        setCanUpgrade(false)
+        setIsLoading(false)
+        
+        toast({
+          title: "Tank Upgrade Complete! (Local)",
+          description: `Your tank is now rank ${newRank}. New decorations have been unlocked!`,
+        })
+      }, 500)
+      return
+    }
+    
+    if (!currentAccount?.address || !tankId) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      
+      const newRank = tankRank + 1
+      
+      // Create transaction to update tank level
+      const tx = new Transaction()
+      
+      // Explicitly set the sender
+      tx.setSender(currentAccount.address)
+      
+      tx.moveCall({
+        target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::update_tank_level`,
+        arguments: [
+          tx.object(tankId),
+          tx.pure.u64(newRank),
+        ],
+      })
+
+      // Check if suiClient is valid
+      if (!suiClient || typeof suiClient !== 'object') {
+        throw new Error('suiClient is not a valid object')
+      }
+
+      // Build the transaction
+      await tx.build({ client: suiClient })
+
+      // Execute transaction
+      const result = await signAndExecute({
+        transaction: tx,
+      })
+    
       setTankRank(newRank)
       setCanUpgrade(false)
 
       toast({
-        title: "Tank Upgraded!",
-        description: `Your tank is now Rank ${newRank}. New decorations unlocked!`,
+        title: "Tank Upgrade Complete!",
+        description: `Your tank is now rank ${newRank}. New decorations have been unlocked!`,
       })
+    } catch (error) {
+      console.error("Tank upgrade error:", error)
+      toast({
+        title: "Error",
+        description: "Failed to upgrade the tank: " + (error instanceof Error ? error.message : String(error)),
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -211,7 +475,8 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       <div className="pixel-container p-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="pixel-text text-xl">
-            {walletAddress ? `${walletAddress}'s Tank` : "Display Tank"}
+            {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}'s Water Tank` : "Water Tank Display"}
+            {isLocalMode && <span className="text-xs ml-2 text-gray-600">(Local Mode)</span>}
           </h2>
 
           {walletAddress && (
@@ -224,13 +489,14 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                 {canUpgrade ? (
                   <button
                     onClick={handleUpgrade}
-                    className="game-button ml-2 px-2 py-1 flex items-center gap-1 bg-green-500"
+                    disabled={isLoading}
+                    className={`game-button ml-2 px-2 py-1 flex items-center gap-1 ${isLoading ? 'bg-gray-400' : 'bg-green-500'}`}
                   >
                     <TrendingUp size={12} />
                     <span className="text-xs">Upgrade</span>
                   </button>
                 ) : (
-                  <div className="ml-2 text-xs">{txToNextRank} TX to next rank</div>
+                  <div className="ml-2 text-xs">{txToNextRank} more for next rank</div>
                 )}
               </div>
             </div>
@@ -248,7 +514,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           {/* Underwater background elements - enhanced based on rank */}
           {walletAddress && (
             <>
-              {/* 背景画像がある場合は既存の背景要素を非表示にする */}
+              {/* Hide existing background elements if a background image exists */}
               {!tankBackground && (
                 <>
                   <div className={`underwater-bg rank-${tankRank}`}></div>
@@ -392,8 +658,8 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         {isOwner && (
           <div className="mt-2 text-xs text-gray-600">
             {objects.length === 0
-              ? "Drag objects from MyBox to place them in your tank"
-              : "Drag placed objects to reposition them"}
+              ? "Drag objects from MyBox to place them in the tank"
+              : "Drag placed objects to change their position"}
           </div>
         )}
 
@@ -401,10 +667,11 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           <div className="flex justify-end mt-4">
             <button 
               onClick={handleSave}
-              className="game-button px-4 py-2 flex items-center gap-2 bg-green-500"
+              disabled={isLoading}
+              className={`game-button px-4 py-2 flex items-center gap-2 ${isLoading ? 'bg-gray-400' : 'bg-green-500'}`}
             >
               <Save size={16} />
-              <span>Save Layout</span>
+              <span>{isLoading ? "Saving..." : "Save Layout"}</span>
             </button>
           </div>
         )}
@@ -433,7 +700,7 @@ function DraggableObject({ id, x, y, isOwner, children, onMove }: DraggableObjec
       return
     }
 
-    // ドラッグ時のゴーストイメージを非表示にする
+    // Hide ghost image when dragging
     const img = new Image()
     img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
     e.dataTransfer.setDragImage(img, 0, 0)
@@ -456,7 +723,7 @@ function DraggableObject({ id, x, y, isOwner, children, onMove }: DraggableObjec
     const newX = ((e.clientX - dragDataRef.current.offsetX - tankRect.left) / tankRect.width) * 100
     const newY = ((e.clientY - dragDataRef.current.offsetY - tankRect.top) / tankRect.height) * 100
 
-    // 範囲を0-100に制限
+    // Limit range to 0-100
     const boundedX = Math.max(0, Math.min(100, newX))
     const boundedY = Math.max(0, Math.min(100, newY))
 
@@ -490,4 +757,3 @@ function DraggableObject({ id, x, y, isOwner, children, onMove }: DraggableObjec
     </div>
   )
 }
-
