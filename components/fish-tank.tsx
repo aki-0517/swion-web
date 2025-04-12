@@ -14,14 +14,10 @@ interface FishTankProps {
   isOwner: boolean
 }
 
-// Suiオブジェクト判定関数を修正
-function isValidSuiObjectId(id: string | number): boolean {
-  if (typeof id === 'string') {
-    // 文字列の場合は0xで始まるSuiオブジェクトIDをチェック
-    return id.startsWith('0x') && id.length >= 40;
-  }
-  // 数値の場合はMyBoxから追加されたNFTのIDとして扱う
-  return true;
+// Improved Sui object ID validation function
+function isValidSuiObjectId(id: string): boolean {
+  // Proper Sui object IDs must start with 0x and have 64 hex characters after that, or 66 total length
+  return typeof id === 'string' && id.startsWith('0x') && /^0x[0-9a-fA-F]{64}$/.test(id);
 }
 
 export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
@@ -108,6 +104,12 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
             // Fetch each NFT object
             for (const nftId of childObjects) {
               try {
+                // Verify that nftId is a valid Sui Object ID before fetching
+                if (!isValidSuiObjectId(nftId)) {
+                  console.warn(`Skipping invalid NFT ID: ${nftId}`)
+                  continue
+                }
+                
                 const nftObject = await suiClient.getObject({
                   id: nftId,
                   options: { showContent: true }
@@ -195,8 +197,12 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
 
       const object = event.detail
       
-      // Check if the object is an NFT and has an ID already
-      const newId = object.id || `${object.type}_${Date.now()}`
+      // Make sure any added object has a valid ID format
+      // For local objects, we'll use a special prefix
+      const newId = object.id && isValidSuiObjectId(object.id) 
+                  ? object.id 
+                  : `local_${object.type}_${Date.now()}`
+                  
       const newObject = {
         ...object,
         id: newId,
@@ -305,6 +311,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           description: "有効なSuiオブジェクトが見つかりませんでした。NFTオブジェクトを配置してください。",
           variant: "destructive",
         })
+        setIsLoading(false)
         return
       }
 
@@ -320,7 +327,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
             target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::save_layout`,
             arguments: [
               tx.object(tankId),
-              tx.object(String(obj.id)),
+              tx.object(obj.id),
               tx.pure.u64(Math.floor(position.x)),
               tx.pure.u64(Math.floor(position.y)),
             ],
@@ -378,13 +385,6 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         }
         return newCount
       })
-      
-      // トランザクション成功後にローカルステートを更新
-      const updateLocalState = (newChildObjects: string[]) => {
-        setObjects(prev => prev.filter(obj => 
-          newChildObjects.includes(obj.id)
-        ))
-      }
       
     } catch (error) {
       console.error("Layout save error:", error)
