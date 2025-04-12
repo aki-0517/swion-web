@@ -14,10 +14,14 @@ interface FishTankProps {
   isOwner: boolean
 }
 
-// Suiオブジェクト判定関数
-function isValidSuiObjectId(id: string): boolean {
-  // Suiオブジェクトは0xで始まり、合計66文字程度（0xプレフィックス＋64文字の16進数）
-  return typeof id === 'string' && id.startsWith('0x') && id.length >= 40;
+// Suiオブジェクト判定関数を修正
+function isValidSuiObjectId(id: string | number): boolean {
+  if (typeof id === 'string') {
+    // 文字列の場合は0xで始まるSuiオブジェクトIDをチェック
+    return id.startsWith('0x') && id.length >= 40;
+  }
+  // 数値の場合はMyBoxから追加されたNFTのIDとして扱う
+  return true;
 }
 
 export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
@@ -293,10 +297,14 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       
       console.log(`Found ${validNFTs.length} valid NFT objects out of ${objects.length} total objects`)
       
-      // 有効なオブジェクトがなければローカルモードでの保存に切り替え
+      // ローカルモードへの切り替えではなく、警告を表示
       if (validNFTs.length === 0) {
-        console.log("No valid Sui objects found, switching to local save mode")
-        handleLocalSave()
+        console.log("No valid Sui objects found")
+        toast({
+          title: "警告",
+          description: "有効なSuiオブジェクトが見つかりませんでした。NFTオブジェクトを配置してください。",
+          variant: "destructive",
+        })
         return
       }
 
@@ -312,7 +320,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
             target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::save_layout`,
             arguments: [
               tx.object(tankId),
-              tx.object(obj.id),
+              tx.object(String(obj.id)),
               tx.pure.u64(Math.floor(position.x)),
               tx.pure.u64(Math.floor(position.y)),
             ],
@@ -370,6 +378,13 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         }
         return newCount
       })
+      
+      // トランザクション成功後にローカルステートを更新
+      const updateLocalState = (newChildObjects: string[]) => {
+        setObjects(prev => prev.filter(obj => 
+          newChildObjects.includes(obj.id)
+        ))
+      }
       
     } catch (error) {
       console.error("Layout save error:", error)
