@@ -171,7 +171,8 @@ export default function Header({ onWalletSearch }: HeaderProps) {
         <div className="flex items-center">
           {account ? (
             <>
-              <DropdownMenu>
+              <ConnectButton />
+              {/* <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="pixel-button px-3 py-1 flex items-center">
                     <span className="mr-1">{account.address.slice(0, 6)}...{account.address.slice(-4)}</span>
@@ -189,7 +190,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
                     My Page
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
+              </DropdownMenu> */}
               {renderMintButton()}
             </>
           ) : (
