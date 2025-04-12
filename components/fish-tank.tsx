@@ -1,11 +1,10 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Fish, Plant, Decoration } from "@/components/tank-objects"
-import { Save, TrendingUp } from "lucide-react"
+import { Save, TrendingUp, RefreshCw } from "lucide-react"
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from "@mysten/dapp-kit"
 import { Transaction } from "@mysten/sui/transactions"
 
@@ -16,7 +15,7 @@ interface FishTankProps {
 
 // Improved Sui object ID validation function
 function isValidSuiObjectId(id: string): boolean {
-  // Proper Sui object IDs must start with 0x and have 64 hex characters after that, or 66 total length
+  // Proper Sui object IDs must start with 0x and have 64 hex characters after that
   return typeof id === 'string' && id.startsWith('0x') && /^0x[0-9a-fA-F]{64}$/.test(id);
 }
 
@@ -34,154 +33,162 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const [txCount, setTxCount] = useState(0)
   const [canUpgrade, setCanUpgrade] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [isLocalMode, setIsLocalMode] = useState(false)
 
-  useEffect(() => {
-    async function fetchWaterTankSBT() {
-      if (walletAddress) {
-        try {
-          // Get WaterTank object
-          const objects = await suiClient.getOwnedObjects({
-            owner: walletAddress,
-            filter: {
-              Package: process.env.NEXT_PUBLIC_PACKAGE_ID ?? ""
-            },
-            options: {
-              showContent: true,
-              showType: true
-            }
-          })
-
-          // Find WaterTank object
-          const waterTank = objects.data.find(obj => {
-            const type = obj.data?.type as string
-            return type.includes("WaterTank")
-          })
-
-          if (waterTank) {
-            interface WaterTankFields {
-              background_image: string;
-              child_objects: string[];
-              level: number;
-            }
-
-            interface NFTFields {
-              name: string;
-              image: string;
-              position_x: number;
-              position_y: number;
-            }
-
-            const content = waterTank.data?.content as unknown as { fields: WaterTankFields }
-            const fields = content?.fields || { background_image: "", child_objects: [], level: 1 }
-            
-            // Save tank ID for later use
-            if (waterTank.data?.objectId) {
-              setTankId(waterTank.data.objectId)
-            }
-            
-            // Get URL from background_image field
-            const backgroundUrl = fields.background_image
-            setTankBackground(backgroundUrl)
-            
-            // Set tank level/rank
-            setTankRank(fields.level || 1)
-
-            // Get child objects (NFTs) and their positions
-            const childObjects = fields.child_objects
-            console.log("Tank child objects:", childObjects)
-            
-            const nftObjects: Array<{
-              id: string;
-              type: string;
-              name: string;
-              image: string;
-              x: number;
-              y: number;
-            }> = []
-            const positions: { [key: string]: { x: number; y: number } } = {}
-
-            // Fetch each NFT object
-            for (const nftId of childObjects) {
-              try {
-                // Verify that nftId is a valid Sui Object ID before fetching
-                if (!isValidSuiObjectId(nftId)) {
-                  console.warn(`Skipping invalid NFT ID: ${nftId}`)
-                  continue
-                }
-                
-                const nftObject = await suiClient.getObject({
-                  id: nftId,
-                  options: { showContent: true }
-                })
-
-                if (nftObject.data?.content) {
-                  const nftContent = nftObject.data.content as unknown as { fields: NFTFields }
-                  const nftFields = nftContent.fields || {
-                    name: "",
-                    image: "",
-                    position_x: 50,
-                    position_y: 50
-                  }
-
-                  console.log(`NFT ${nftId} position:`, nftFields.position_x, nftFields.position_y)
-
-                  const nft = {
-                    id: nftId,
-                    type: "nft",
-                    name: nftFields.name || "",
-                    image: nftFields.image || "",
-                    x: nftFields.position_x || 50,
-                    y: nftFields.position_y || 50
-                  }
-
-                  nftObjects.push(nft)
-                  positions[nftId] = {
-                    x: nftFields.position_x || 50,
-                    y: nftFields.position_y || 50
-                  }
-                }
-              } catch (error) {
-                console.error(`Error fetching NFT ${nftId}:`, error)
-              }
-            }
-
-            setObjects(nftObjects)
-            setObjectPositions(positions)
-            
-            // Reset hasChanges after loading
-            setHasChanges(false)
-            
-            // ローカルモード判定
-            setIsLocalMode(false) // デフォルトはブロックチェーンモード
-          } else {
-            console.log("WaterTank object not found, switching to local mode")
-            setIsLocalMode(true)
-          }
-        } catch (error) {
-          console.error("Error fetching WaterTank:", error)
-          toast({
-            title: "Error",
-            description: "Failed to retrieve the water tank SBT",
-            variant: "destructive",
-          })
-          setIsLocalMode(true)
-        }
-      } else {
-        // Reset states when wallet address is not available
-        setObjects([])
-        setObjectPositions({})
-        setTankBackground("")
-        setTankId("")
-        setTankRank(1)
-        setTxCount(0)
-        setCanUpgrade(false)
-        setIsLocalMode(true)
-      }
+  // Extract fetchWaterTankSBT to a reusable function
+  const fetchWaterTankSBT = useCallback(async () => {
+    if (!walletAddress) {
+      // Reset states when wallet address is not available
+      setObjects([])
+      setObjectPositions({})
+      setTankBackground("")
+      setTankId("")
+      setTankRank(1)
+      setTxCount(0)
+      setCanUpgrade(false)
+      setIsLocalMode(true)
+      return
     }
 
+    try {
+      setIsRefreshing(true)
+      
+      // Get WaterTank object
+      const objects = await suiClient.getOwnedObjects({
+        owner: walletAddress,
+        filter: {
+          Package: process.env.NEXT_PUBLIC_PACKAGE_ID ?? ""
+        },
+        options: {
+          showContent: true,
+          showType: true
+        }
+      })
+
+      // Find WaterTank object
+      const waterTank = objects.data.find(obj => {
+        const type = obj.data?.type as string
+        return type.includes("WaterTank")
+      })
+
+      if (waterTank) {
+        interface WaterTankFields {
+          background_image: string;
+          child_objects: string[];
+          level: number;
+        }
+
+        interface NFTFields {
+          name: string;
+          image: string;
+          position_x: number;
+          position_y: number;
+        }
+
+        const content = waterTank.data?.content as unknown as { fields: WaterTankFields }
+        const fields = content?.fields || { background_image: "", child_objects: [], level: 1 }
+        
+        // Save tank ID for later use
+        if (waterTank.data?.objectId) {
+          setTankId(waterTank.data.objectId)
+        }
+        
+        // Get URL from background_image field
+        const backgroundUrl = fields.background_image
+        setTankBackground(backgroundUrl)
+        
+        // Set tank level/rank
+        setTankRank(fields.level || 1)
+
+        // Get child objects (NFTs) and their positions
+        const childObjects = fields.child_objects
+        console.log("Tank child objects:", childObjects)
+        
+        const nftObjects: Array<{
+          id: string;
+          type: string;
+          name: string;
+          image: string;
+          x: number;
+          y: number;
+        }> = []
+        const positions: { [key: string]: { x: number; y: number } } = {}
+
+        // Fetch each NFT object
+        for (const nftId of childObjects) {
+          try {
+            // Verify that nftId is a valid Sui Object ID before fetching
+            if (!isValidSuiObjectId(nftId)) {
+              console.warn(`Skipping invalid NFT ID: ${nftId}`)
+              continue
+            }
+            
+            const nftObject = await suiClient.getObject({
+              id: nftId,
+              options: { showContent: true }
+            })
+
+            if (nftObject.data?.content) {
+              const nftContent = nftObject.data.content as unknown as { fields: NFTFields }
+              const nftFields = nftContent.fields || {
+                name: "",
+                image: "",
+                position_x: 50,
+                position_y: 50
+              }
+
+              console.log(`NFT ${nftId} position:`, nftFields.position_x, nftFields.position_y)
+
+              const nft = {
+                id: nftId,
+                type: "nft",
+                name: nftFields.name || "",
+                image: nftFields.image || "",
+                x: nftFields.position_x || 50,
+                y: nftFields.position_y || 50
+              }
+
+              nftObjects.push(nft)
+              positions[nftId] = {
+                x: nftFields.position_x || 50,
+                y: nftFields.position_y || 50
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching NFT ${nftId}:`, error)
+          }
+        }
+
+        setObjects(nftObjects)
+        setObjectPositions(positions)
+        
+        // Reset hasChanges after loading
+        setHasChanges(false)
+        
+        // ローカルモード判定
+        setIsLocalMode(false) // デフォルトはブロックチェーンモード
+      } else {
+        console.log("WaterTank object not found, switching to local mode")
+        setIsLocalMode(true)
+      }
+    } catch (error) {
+      console.error("Error fetching WaterTank:", error)
+      toast({
+        title: "Error",
+        description: "Failed to retrieve the water tank SBT",
+        variant: "destructive",
+      })
+      setIsLocalMode(true)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [walletAddress, suiClient, toast])
+
+  // Load tank data on component mount or wallet change
+  useEffect(() => {
     fetchWaterTankSBT()
-  }, [walletAddress, suiClient])
+  }, [fetchWaterTankSBT])
 
   // Event listener for placing objects in tank
   useEffect(() => {
@@ -200,8 +207,8 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       // Make sure any added object has a valid ID format
       // For local objects, we'll use a special prefix
       const newId = object.id && isValidSuiObjectId(object.id) 
-                  ? object.id 
-                  : `local_${object.type}_${Date.now()}`
+                ? object.id 
+                : `local_${object.type}_${Date.now()}`
                   
       const newObject = {
         ...object,
@@ -255,8 +262,8 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
     }, 500)
   }
 
-  // Layout save handler
-  const handleSave = async () => {
+  // 新しい実装: アタッチして保存する関数
+  const handleAttachAndSave = async () => {
     // ローカルモードの場合は簡易保存のみ
     if (isLocalMode) {
       handleLocalSave()
@@ -303,7 +310,6 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       
       console.log(`Found ${validNFTs.length} valid NFT objects out of ${objects.length} total objects`)
       
-      // ローカルモードへの切り替えではなく、警告を表示
       if (validNFTs.length === 0) {
         console.log("No valid Sui objects found")
         toast({
@@ -315,14 +321,22 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         return
       }
 
-      // For each NFT object, save layout position
+      // First attach NFTs to tank, then save positions
       for (const obj of validNFTs) {
         const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
         
-        console.log(`Saving NFT: ${obj.id}, Position: x=${Math.floor(position.x)}, y=${Math.floor(position.y)}`)
+        console.log(`Processing NFT: ${obj.id}, Position: x=${Math.floor(position.x)}, y=${Math.floor(position.y)}`)
         
         try {
-          // Use save_layout function to save position
+          // Use attach_object and save_layout in one transaction
+          tx.moveCall({
+            target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::attach_object`,
+            arguments: [
+              tx.object(tankId),
+              tx.object(obj.id),
+            ],
+          })
+          
           tx.moveCall({
             target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::save_layout`,
             arguments: [
@@ -334,8 +348,9 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           })
           
           hasValidObjects = true
+          console.log(`Added attach_object and save_layout for NFT ${obj.id}`)
         } catch (error) {
-          console.error(`Error preparing save_layout for NFT ${obj.id}:`, error)
+          console.error(`Error preparing transaction for NFT ${obj.id}:`, error)
         }
       }
 
@@ -386,6 +401,9 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         return newCount
       })
       
+      // Refresh the tank data to show the updated child_objects
+      await fetchWaterTankSBT()
+      
     } catch (error) {
       console.error("Layout save error:", error)
       toast({
@@ -398,6 +416,27 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       handleLocalSave()
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true)
+      await fetchWaterTankSBT()
+      toast({
+        title: "Refreshed",
+        description: "Tank data has been refreshed",
+      })
+    } catch (error) {
+      console.error("Refresh error:", error)
+      toast({
+        title: "Error",
+        description: "Failed to refresh tank data",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -469,6 +508,9 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         title: "Tank Upgrade Complete!",
         description: `Your tank is now rank ${newRank}. New decorations have been unlocked!`,
       })
+      
+      // Refresh after upgrade
+      await fetchWaterTankSBT()
     } catch (error) {
       console.error("Tank upgrade error:", error)
       toast({
@@ -489,10 +531,22 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
     <div className="w-full max-w-4xl mx-auto">
       <div className="pixel-container p-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="pixel-text text-xl">
-            {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}'s Water Tank` : "Water Tank Display"}
-            {isLocalMode && <span className="text-xs ml-2 text-gray-600">(Local Mode)</span>}
-          </h2>
+          <div className="flex items-center">
+            <h2 className="pixel-text text-xl">
+              {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}'s Water Tank` : "Water Tank Display"}
+              {isLocalMode && <span className="text-xs ml-2 text-gray-600">(Local Mode)</span>}
+            </h2>
+            {walletAddress && (
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="ml-2 p-1 rounded bg-blue-100 hover:bg-blue-200 transition-colors"
+                title="Refresh tank data"
+              >
+                <RefreshCw size={16} className={`${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+          </div>
 
           {walletAddress && (
             <div className="flex items-center">
@@ -681,7 +735,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         {isOwner && hasChanges && (
           <div className="flex justify-end mt-4">
             <button 
-              onClick={handleSave}
+              onClick={handleAttachAndSave}
               disabled={isLoading}
               className={`game-button px-4 py-2 flex items-center gap-2 ${isLoading ? 'bg-gray-400' : 'bg-green-500'}`}
             >
