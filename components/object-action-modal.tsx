@@ -44,7 +44,7 @@ export default function ObjectActionModal({
 
   const handlePlaceInTank = () => {
     const nftObject = {
-      id: Date.now(),
+      id: object.id,
       type: "nft",
       name: object.name,
       image: object.image,
