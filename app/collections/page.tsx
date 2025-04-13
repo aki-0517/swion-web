@@ -2,89 +2,113 @@
 
 import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from "@/lib/supabaseClient"
 import Image from "next/image"
 import Header from "@/components/header"
 import SynObjectDetailModal from "@/components/syn-object-detail-modal"
-
-interface MintFlag {
-  module: string
-  package: string
-  function: string
-}
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
+import { type SuiObjectData } from '@mysten/sui/client'
 
 interface SynObject {
-  id: number
-  name: string
+  id: string
+  owner: string
+  attached_objects: string[]
   image: string
-  attached_objects: number[]
-  mint_flags: MintFlag[]
   is_public: boolean
-  created_at: string
-  updated_at: string
+  max_supply: number
+  current_supply: number
+  price: number
+  kioskId?: string
 }
 
 export default function CollectionsPage() {
   const [synObjects, setSynObjects] = useState<SynObject[]>([])
-  const [objectImages, setObjectImages] = useState<{ [key: number]: string }>({})
   const [selectedSynObject, setSelectedSynObject] = useState<SynObject | null>(null)
   const { toast } = useToast()
+  const account = useCurrentAccount()
+  const suiClient = useSuiClient()
 
   useEffect(() => {
-    async function fetchPublicSynObjects() {
-      const { data, error } = await supabase
-        .from('syn_objects')
-        .select('*')
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load collections",
-          variant: "destructive",
+    async function fetchMarketplaceSynObjects() {
+      try {
+        // Kioskに出品されているSynObjectを取得
+        const { data: kiosks } = await suiClient.getOwnedObjects({
+          owner: account?.address ?? "",
+          filter: {
+            MatchAll: [
+              {
+                Package: process.env.NEXT_PUBLIC_PACKAGE_ID ?? "",
+              },
+              {
+                StructType: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::marketplace::Kiosk`,
+              },
+            ],
+          },
+          options: {
+            showContent: true,
+            showType: true,
+          },
         })
-        return
-      }
 
-      setSynObjects(data || [])
+        const synObjectsData: SynObject[] = []
+        
+        for (const kiosk of kiosks) {
+          if (!kiosk.data) continue
 
-      const imageUrls: { [key: number]: string } = {}
-      for (const object of data || []) {
-        if (object.image) {
-          const { data: imageUrl } = supabase
-            .storage
-            .from('syn-objects')
-            .getPublicUrl(object.image)
+          // Kioskから出品中のSynObjectを取得
+          const { data: objects } = await suiClient.getDynamicFields({
+            parentId: kiosk.data.objectId,
+          })
           
-          if (imageUrl) {
-            imageUrls[object.id] = imageUrl.publicUrl
+          for (const obj of objects) {
+            // SynObjectの詳細情報を取得
+            const { data: synObjectData } = await suiClient.getObject({
+              id: obj.objectId,
+              options: {
+                showContent: true,
+                showType: true,
+              },
+            })
+            
+            if (synObjectData && 'content' in synObjectData) {
+              const fields = (synObjectData.content as { fields: any }).fields
+              synObjectsData.push({
+                id: synObjectData.objectId,
+                owner: fields.owner,
+                attached_objects: fields.attached_objects,
+                image: fields.image,
+                is_public: true,
+                max_supply: Number(fields.max_supply),
+                current_supply: Number(fields.current_supply),
+                price: Number(fields.price),
+                kioskId: kiosk.data.objectId,
+              })
+            }
           }
         }
+
+        setSynObjects(synObjectsData)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load marketplace items",
+          variant: "destructive",
+        })
       }
-      setObjectImages(imageUrls)
     }
 
-    fetchPublicSynObjects()
-  }, [])
-
-  const formatMintFlags = (mintFlags: MintFlag[]) => {
-    return mintFlags.map(flag => 
-      `${flag.package}::${flag.module}::${flag.function}`
-    ).join(', ')
-  }
+    fetchMarketplaceSynObjects()
+  }, [suiClient, toast, account?.address])
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
         onWalletSearch={(address: string) => {
-          // ウォレットアドレスで検索する処理を実装
           console.log("Searching wallet:", address);
         }}
       />
 
       <main className="container mx-auto px-4 py-8">
-        <h1 className="pixel-text text-2xl mb-6">Public Collections</h1>
+        <h1 className="pixel-text text-2xl mb-6">Marketplace</h1>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {synObjects.map((synObject) => (
@@ -94,24 +118,20 @@ export default function CollectionsPage() {
               onClick={() => setSelectedSynObject(synObject)}
             >
               <div className="w-full aspect-square bg-blue-100 border-2 border-black mb-4 relative">
-                {objectImages[synObject.id] ? (
+                {synObject.image && (
                   <Image
-                    src={objectImages[synObject.id]}
-                    alt={synObject.name || `SynObject ${synObject.id}`}
+                    src={synObject.image}
+                    alt={`SynObject ${synObject.id}`}
                     fill
                     className="object-contain p-2"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    No Image
-                  </div>
                 )}
               </div>
 
               <div className="space-y-2">
                 <h3 className="pixel-text text-lg">
-                  {synObject.name || `SynObject ${synObject.id}`}
+                  SynObject #{synObject.id.slice(0, 6)}
                 </h3>
 
                 <div className="text-sm">
@@ -121,8 +141,18 @@ export default function CollectionsPage() {
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-500">
-                  Created: {new Date(synObject.created_at).toLocaleDateString()}
+                <div className="text-sm">
+                  <div className="font-semibold">Price:</div>
+                  <div className="text-gray-600">
+                    {synObject.price} SUI
+                  </div>
+                </div>
+
+                <div className="text-sm">
+                  <div className="font-semibold">Supply:</div>
+                  <div className="text-gray-600">
+                    {synObject.current_supply} / {synObject.max_supply}
+                  </div>
                 </div>
               </div>
             </div>
@@ -131,7 +161,7 @@ export default function CollectionsPage() {
 
         {synObjects.length === 0 && (
           <div className="text-center text-gray-500 py-12">
-            No public collections available yet.
+            No items available in the marketplace.
           </div>
         )}
 
