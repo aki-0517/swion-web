@@ -40,8 +40,8 @@ export default function CollectionsPage() {
 
       if (error) {
         toast({
-          title: "エラー",
-          description: "コレクションの読み込みに失敗しました",
+          title: "Error",
+          description: "Failed to load collections",
           variant: "destructive",
         })
         return
@@ -131,7 +131,7 @@ export default function CollectionsPage() {
 
         {synObjects.length === 0 && (
           <div className="text-center text-gray-500 py-12">
-            公開されているコレクションはまだありません。
+            No public collections available yet.
           </div>
         )}
 
