@@ -6,7 +6,8 @@ import { X, Plus } from "lucide-react"
 import CraftingModal from "./crafting-modal"
 import ObjectActionModal from "./object-action-modal"
 import { useToast } from "@/hooks/use-toast"
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
+import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit"
+import { Transaction } from "@mysten/sui/transactions"
 
 interface MyBoxModalProps {
   onClose: () => void
@@ -21,6 +22,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
   const [selectedObject, setSelectedObject] = useState<any | null>(null)
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
+  const signTransaction = useSignTransaction()
 
   useEffect(() => {
     async function fetchUserObjects() {
@@ -392,7 +394,9 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                     </div>
                   )}
 
-                  {object.type === "synObject" && <div className="text-4xl">{object.image}</div>}
+                  {object.type === "synObject" && (
+                    <img src={object.image} alt={object.name} className="w-full h-full object-contain" />
+                  )}
                   {object.type === "nft" && (
                     <img src={object.image} alt={object.name} className="w-full h-full object-contain" />
                   )}

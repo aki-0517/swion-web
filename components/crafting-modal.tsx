@@ -4,6 +4,8 @@ import { useState, useEffect, Fragment } from "react"
 import { X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabaseClient"
+import { Transaction } from "@mysten/sui/transactions"
+import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit"
 
 interface CraftingModalProps {
   objects: any[]
@@ -18,6 +20,8 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("")
   const { toast } = useToast()
+  const account = useCurrentAccount()
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
 
   useEffect(() => {
     async function calculateCraftingResult() {
@@ -69,11 +73,20 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
   }
 
   const handleMint = async () => {
+    if (!account?.address) {
+      toast({
+        title: "エラー",
+        description: "ウォレットを接続してください",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       if (totalSupply < 1) {
         toast({
-          title: "Error",
-          description: "Total supply must be at least 1",
+          title: "エラー",
+          description: "総供給量は1以上である必要があります",
           variant: "destructive",
         })
         return
@@ -91,26 +104,47 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
         imageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/suiden/${fileName}`
       }
 
-      const { data: newSynObject, error } = await supabase
-        .from('syn_objects')
-        .insert({
-          name: resultObject.name,
-          rarity: resultObject.rarity,
-          image: imageUrl,
-          components: objects.map(obj => obj.id),
-          owner_address: 'current_user_address',
-          total_supply: totalSupply
-        })
-        .select()
-        .single()
+      // 新しいトランザクションの作成
+      const transaction = new Transaction()
+      
+      // mint_syn_objectを呼び出し
+      transaction.moveCall({
+        target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::mint_syn_object`,
+        arguments: [
+          // attached_objects: vector<ID>
+          transaction.pure.vector("address", objects.map(obj => obj.id)),
+          // image: vector<u8>
+          transaction.pure.vector("u8", Array.from(new TextEncoder().encode(imageUrl))),
+          // max_supply: u64
+          transaction.pure.u64(BigInt(totalSupply)),
+          // price: u64
+          transaction.pure.u64(BigInt(1000000)) // 1 SUI = 1,000,000 MIST
+        ],
+      })
 
-      if (error) throw error
+      // トランザクションを実行
+      await signAndExecuteTransaction({
+        transaction
+      })
 
-      onComplete(newSynObject)
-    } catch (error: any) {
+      // 成功通知
       toast({
-        title: "Error",
-        description: "Failed to create new object",
+        title: "成功",
+        description: "SynObjectの作成に成功しました！",
+      })
+
+      // モーダルを閉じる
+      onComplete({
+        name: resultObject.name,
+        image: imageUrl,
+        rarity: resultObject.rarity
+      })
+
+    } catch (error: any) {
+      console.error("Mint error:", error)
+      toast({
+        title: "エラー",
+        description: "SynObjectの作成に失敗しました",
         variant: "destructive",
       })
     }

@@ -116,7 +116,9 @@ export default function ObjectActionModal({
                 </div>
               )}
 
-              {object.type === "synObject" && <div className="text-6xl">{object.image}</div>}
+              {object.type === "synObject" && (
+                <img src={object.image} alt={object.name} className="w-full h-full object-contain" />
+              )}
               
               {object.type === "nft" && (
                 <img src={object.image} alt={object.name} className="w-full h-full object-contain" />
