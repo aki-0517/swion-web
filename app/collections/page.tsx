@@ -6,19 +6,43 @@ import Image from "next/image"
 import Header from "@/components/header"
 import SynObjectDetailModal from "@/components/syn-object-detail-modal"
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
-import { type SuiObjectData } from '@mysten/sui/client'
+import { KioskClient, Network } from '@mysten/kiosk'
+import { type SuiObjectData, SuiParsedData } from '@mysten/sui/client'
+import { SynObject, SuiMoveObject } from "@/types/synObject"
 
-interface SynObject {
-  id: string
-  owner: string
-  attached_objects: string[]
-  image: string
-  is_public: boolean
-  max_supply: number
-  current_supply: number
-  price: number
-  kioskId?: string
-}
+// Mock data for development
+const mockSynObjects: SynObject[] = [
+  {
+    id: "0x123456789",
+    owner: "0xmockowner1",
+    attached_objects: ["obj1", "obj2"],
+    image: "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//Subject%2011.png",
+    is_public: true,
+    max_supply: 100,
+    current_supply: 1,
+    price: 10,
+    kioskId: "0xkiosk1",
+    listing: {
+      id: "0xlisting1",
+      price: 10000000000
+    }
+  },
+  {
+    id: "0x987654321",
+    owner: "0xmockowner2",
+    attached_objects: ["obj3"],
+    image: "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//Subject%205.png",
+    is_public: true,
+    max_supply: 50,
+    current_supply: 3,
+    price: 20,
+    kioskId: "0xkiosk2",
+    listing: {
+      id: "0xlisting2",
+      price: 20000000000
+    }
+  }
+]
 
 export default function CollectionsPage() {
   const [synObjects, setSynObjects] = useState<SynObject[]>([])
@@ -26,84 +50,36 @@ export default function CollectionsPage() {
   const { toast } = useToast()
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
+  const [kioskClient, setKioskClient] = useState<KioskClient | null>(null)
 
   useEffect(() => {
-    async function fetchMarketplaceSynObjects() {
-      try {
-        // Kioskに出品されているSynObjectを取得
-        const { data: kiosks } = await suiClient.getOwnedObjects({
-          owner: account?.address ?? "",
-          filter: {
-            MatchAll: [
-              {
-                Package: process.env.NEXT_PUBLIC_PACKAGE_ID ?? "",
-              },
-              {
-                StructType: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::marketplace::Kiosk`,
-              },
-            ],
-          },
-          options: {
-            showContent: true,
-            showType: true,
-          },
-        })
-
-        const synObjectsData: SynObject[] = []
-        
-        for (const kiosk of kiosks) {
-          if (!kiosk.data) continue
-
-          // Kioskから出品中のSynObjectを取得
-          const { data: objects } = await suiClient.getDynamicFields({
-            parentId: kiosk.data.objectId,
-          })
-          
-          for (const obj of objects) {
-            // SynObjectの詳細情報を取得
-            const { data: synObjectData } = await suiClient.getObject({
-              id: obj.objectId,
-              options: {
-                showContent: true,
-                showType: true,
-              },
-            })
-            
-            if (synObjectData && 'content' in synObjectData) {
-              const fields = (synObjectData.content as { fields: any }).fields
-              synObjectsData.push({
-                id: synObjectData.objectId,
-                owner: fields.owner,
-                attached_objects: fields.attached_objects,
-                image: fields.image,
-                is_public: true,
-                max_supply: Number(fields.max_supply),
-                current_supply: Number(fields.current_supply),
-                price: Number(fields.price),
-                kioskId: kiosk.data.objectId,
-              })
-            }
-          }
-        }
-
-        setSynObjects(synObjectsData)
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load marketplace items",
-          variant: "destructive",
-        })
+    // Initialize KioskClient
+    const client = new KioskClient({
+      client: suiClient,
+      network: Network.CUSTOM,
+      packageIds: {
+        kioskLockRulePackageId: process.env.NEXT_PUBLIC_PACKAGE_ID ?? "",
       }
+    })
+    setKioskClient(client)
+  }, [suiClient])
+
+  useEffect(() => {
+    // Simulate API fetch with mock data
+    const fetchMockData = () => {
+      setTimeout(() => {
+        setSynObjects(mockSynObjects)
+      }, 1000) // Add 1 second delay to simulate network request
     }
 
-    fetchMarketplaceSynObjects()
-  }, [suiClient, toast, account?.address])
+    fetchMockData()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
         onWalletSearch={(address: string) => {
-          console.log("Searching wallet:", address);
+          console.log("Searching wallet:", address)
         }}
       />
 
@@ -137,14 +113,14 @@ export default function CollectionsPage() {
                 <div className="text-sm">
                   <div className="font-semibold">Attached Objects:</div>
                   <div className="text-gray-600">
-                    {synObject.attached_objects.length} objects
+                    {synObject.attached_objects.length} items
                   </div>
                 </div>
 
                 <div className="text-sm">
                   <div className="font-semibold">Price:</div>
                   <div className="text-gray-600">
-                    {synObject.price} SUI
+                    {synObject.listing ? `${synObject.listing.price / 1_000_000_000} SUI` : "Not Listed"}
                   </div>
                 </div>
 
@@ -161,13 +137,14 @@ export default function CollectionsPage() {
 
         {synObjects.length === 0 && (
           <div className="text-center text-gray-500 py-12">
-            No items available in the marketplace.
+            No items are currently listed in the marketplace.
           </div>
         )}
 
-        {selectedSynObject && (
+        {selectedSynObject && kioskClient && (
           <SynObjectDetailModal
             synObject={selectedSynObject}
+            kioskClient={kioskClient}
             onClose={() => setSelectedSynObject(null)}
           />
         )}
@@ -175,4 +152,3 @@ export default function CollectionsPage() {
     </div>
   )
 }
-
