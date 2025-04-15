@@ -2,89 +2,89 @@
 
 import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from "@/lib/supabaseClient"
 import Image from "next/image"
 import Header from "@/components/header"
 import SynObjectDetailModal from "@/components/syn-object-detail-modal"
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
+import { KioskClient, Network } from '@mysten/kiosk'
+import { type SuiObjectData, SuiParsedData } from '@mysten/sui/client'
+import { SynObject, SuiMoveObject } from "@/types/synObject"
 
-interface MintFlag {
-  module: string
-  package: string
-  function: string
-}
-
-interface SynObject {
-  id: number
-  name: string
-  image: string
-  attached_objects: number[]
-  mint_flags: MintFlag[]
-  is_public: boolean
-  created_at: string
-  updated_at: string
-}
+// Mock data for development
+const mockSynObjects: SynObject[] = [
+  {
+    id: "0x123456789",
+    owner: "0xmockowner1",
+    attached_objects: ["obj1", "obj2"],
+    image: "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//Subject%2011.png",
+    is_public: true,
+    max_supply: 100,
+    current_supply: 1,
+    price: 10,
+    kioskId: "0xkiosk1",
+    listing: {
+      id: "0xlisting1",
+      price: 10000000000
+    }
+  },
+  {
+    id: "0x987654321",
+    owner: "0xmockowner2",
+    attached_objects: ["obj3"],
+    image: "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//Subject%205.png",
+    is_public: true,
+    max_supply: 50,
+    current_supply: 3,
+    price: 20,
+    kioskId: "0xkiosk2",
+    listing: {
+      id: "0xlisting2",
+      price: 20000000000
+    }
+  }
+]
 
 export default function CollectionsPage() {
   const [synObjects, setSynObjects] = useState<SynObject[]>([])
-  const [objectImages, setObjectImages] = useState<{ [key: number]: string }>({})
   const [selectedSynObject, setSelectedSynObject] = useState<SynObject | null>(null)
   const { toast } = useToast()
+  const account = useCurrentAccount()
+  const suiClient = useSuiClient()
+  const [kioskClient, setKioskClient] = useState<KioskClient | null>(null)
 
   useEffect(() => {
-    async function fetchPublicSynObjects() {
-      const { data, error } = await supabase
-        .from('syn_objects')
-        .select('*')
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load collections",
-          variant: "destructive",
-        })
-        return
+    // Initialize KioskClient
+    const client = new KioskClient({
+      client: suiClient,
+      network: Network.CUSTOM,
+      packageIds: {
+        kioskLockRulePackageId: process.env.NEXT_PUBLIC_PACKAGE_ID ?? "",
       }
+    })
+    setKioskClient(client)
+  }, [suiClient])
 
-      setSynObjects(data || [])
-
-      const imageUrls: { [key: number]: string } = {}
-      for (const object of data || []) {
-        if (object.image) {
-          const { data: imageUrl } = supabase
-            .storage
-            .from('syn-objects')
-            .getPublicUrl(object.image)
-          
-          if (imageUrl) {
-            imageUrls[object.id] = imageUrl.publicUrl
-          }
-        }
-      }
-      setObjectImages(imageUrls)
+  useEffect(() => {
+    // Simulate API fetch with mock data
+    const fetchMockData = () => {
+      setTimeout(() => {
+        setSynObjects(mockSynObjects)
+      }, 1000) // Add 1 second delay to simulate network request
     }
 
-    fetchPublicSynObjects()
+    fetchMockData()
   }, [])
-
-  const formatMintFlags = (mintFlags: MintFlag[]) => {
-    return mintFlags.map(flag => 
-      `${flag.package}::${flag.module}::${flag.function}`
-    ).join(', ')
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
         onWalletSearch={(address: string) => {
-          // ウォレットアドレスで検索する処理を実装
-          console.log("Searching wallet:", address);
+          console.log("Searching wallet:", address)
         }}
       />
 
       <main className="container mx-auto px-4 py-8">
-        <h1 className="pixel-text text-2xl mb-6">Public Collections</h1>
+        <h1 className="pixel-text text-2xl mb-6">Marketplace</h1>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {synObjects.map((synObject) => (
@@ -94,35 +94,41 @@ export default function CollectionsPage() {
               onClick={() => setSelectedSynObject(synObject)}
             >
               <div className="w-full aspect-square bg-blue-100 border-2 border-black mb-4 relative">
-                {objectImages[synObject.id] ? (
+                {synObject.image && (
                   <Image
-                    src={objectImages[synObject.id]}
-                    alt={synObject.name || `SynObject ${synObject.id}`}
+                    src={synObject.image}
+                    alt={`SynObject ${synObject.id}`}
                     fill
                     className="object-contain p-2"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    No Image
-                  </div>
                 )}
               </div>
 
               <div className="space-y-2">
                 <h3 className="pixel-text text-lg">
-                  {synObject.name || `SynObject ${synObject.id}`}
+                  SynObject #{synObject.id.slice(0, 6)}
                 </h3>
 
                 <div className="text-sm">
                   <div className="font-semibold">Attached Objects:</div>
                   <div className="text-gray-600">
-                    {synObject.attached_objects.length} objects
+                    {synObject.attached_objects.length} items
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-500">
-                  Created: {new Date(synObject.created_at).toLocaleDateString()}
+                <div className="text-sm">
+                  <div className="font-semibold">Price:</div>
+                  <div className="text-gray-600">
+                    {synObject.listing ? `${synObject.listing.price / 1_000_000_000} SUI` : "Not Listed"}
+                  </div>
+                </div>
+
+                <div className="text-sm">
+                  <div className="font-semibold">Supply:</div>
+                  <div className="text-gray-600">
+                    {synObject.current_supply} / {synObject.max_supply}
+                  </div>
                 </div>
               </div>
             </div>
@@ -131,13 +137,14 @@ export default function CollectionsPage() {
 
         {synObjects.length === 0 && (
           <div className="text-center text-gray-500 py-12">
-            No public collections available yet.
+            No items are currently listed in the marketplace.
           </div>
         )}
 
-        {selectedSynObject && (
+        {selectedSynObject && kioskClient && (
           <SynObjectDetailModal
             synObject={selectedSynObject}
+            kioskClient={kioskClient}
             onClose={() => setSelectedSynObject(null)}
           />
         )}
@@ -145,4 +152,3 @@ export default function CollectionsPage() {
     </div>
   )
 }
-

@@ -1,24 +1,21 @@
 "use client"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { supabase } from "@/lib/supabaseClient"
 import Image from "next/image"
-
-interface MintFlag {
-  module: string
-  package: string
-  function: string
-}
+import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from "@mysten/dapp-kit"
+import { Transaction } from "@mysten/sui/transactions"
+import { useToast } from "@/hooks/use-toast"
 
 interface SynObject {
-  id: number
-  name: string
+  id: string
+  owner: string
+  attached_objects: string[]
   image: string
-  attached_objects: number[]
-  mint_flags: MintFlag[]
   is_public: boolean
-  created_at: string
-  updated_at: string
+  max_supply: number
+  current_supply: number
+  price: number
+  kioskId?: string
 }
 
 interface SynObjectDetailModalProps {
@@ -27,19 +24,44 @@ interface SynObjectDetailModalProps {
 }
 
 export default function SynObjectDetailModal({ synObject, onClose }: SynObjectDetailModalProps) {
-  const formatMintFlags = (mintFlags: MintFlag[]) => {
-    return mintFlags.map(flag => 
-      `${flag.package}::${flag.module}::${flag.function}`
-    )
-  }
+  const account = useCurrentAccount()
+  const suiClient = useSuiClient()
+  const { toast } = useToast()
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
 
-  const getImageUrl = () => {
-    const { data } = supabase
-      .storage
-      .from('syn-objects')
-      .getPublicUrl(synObject.image)
-    
-    return data?.publicUrl
+  const handlePurchase = async () => {
+    if (!account?.address) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const tx = new Transaction()
+      
+      // SUIコインを分割
+      const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(BigInt(synObject.price))])
+      
+      // marketplace::purchase_syn_object_from_kioskを呼び出し
+      tx.moveCall({
+        target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::marketplace::purchase_syn_object_from_kiosk`,
+        arguments: [
+          tx.object(synObject.kioskId!), // kiosk
+          tx.object(process.env.NEXT_PUBLIC_TRANSFER_POLICY_ID!), // policy
+          tx.pure.address(synObject.id), // syn_id
+          coin, // payment
+        ],
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to purchase SynObject",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -47,7 +69,7 @@ export default function SynObjectDetailModal({ synObject, onClose }: SynObjectDe
       <DialogContent className="pixel-container sm:max-w-[425px] bg-white">
         <DialogHeader>
           <DialogTitle className="pixel-text text-xl">
-            {synObject.name || `SynObject ${synObject.id}`}
+            SynObject #{synObject.id.slice(0, 6)}
           </DialogTitle>
         </DialogHeader>
 
@@ -55,8 +77,8 @@ export default function SynObjectDetailModal({ synObject, onClose }: SynObjectDe
           <div className="w-full aspect-square bg-blue-100 border-2 border-black mb-4 relative">
             {synObject.image && (
               <Image
-                src={getImageUrl() || ''}
-                alt={synObject.name || `SynObject ${synObject.id}`}
+                src={synObject.image}
+                alt={`SynObject ${synObject.id}`}
                 fill
                 className="object-contain p-4"
                 sizes="(max-width: 425px) 100vw"
@@ -73,15 +95,27 @@ export default function SynObjectDetailModal({ synObject, onClose }: SynObjectDe
             </div>
 
             <div>
-              <h4 className="pixel-text text-sm">Mint Flags:</h4>
-              <div className="space-y-1">
-                {formatMintFlags(synObject.mint_flags).map((flag, index) => (
-                  <p key={index} className="text-sm font-mono bg-gray-100 p-2 rounded">
-                    {flag}
-                  </p>
-                ))}
-              </div>
+              <h4 className="pixel-text text-sm">Supply:</h4>
+              <p className="text-sm">
+                {synObject.current_supply} / {synObject.max_supply}
+              </p>
             </div>
+
+            <div>
+              <h4 className="pixel-text text-sm">Price:</h4>
+              <p className="text-sm">
+                {synObject.price} SUI
+              </p>
+            </div>
+
+            {account?.address !== synObject.owner && (
+              <button
+                onClick={handlePurchase}
+                className="game-button w-full py-2"
+              >
+                Purchase for {synObject.price} SUI
+              </button>
+            )}
           </div>
         </div>
       </DialogContent>
