@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import type React from "react"
-import { X, Plus } from "lucide-react"
+import { X, Plus, Save } from "lucide-react"
 import CraftingModal from "./crafting-modal"
 import ObjectActionModal from "./object-action-modal"
 import { useToast } from "@/hooks/use-toast"
@@ -257,45 +257,59 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose}></div>
-      <div className="relative w-1/3 h-full bg-white border-r-4 border-black overflow-auto">
-        <div className="sticky top-0 bg-blue-500 border-b-4 border-black p-4 flex justify-between items-center">
-          <h2 className="pixel-text text-white text-lg">MyBox</h2>
-          <button onClick={onClose} className="text-white">
+      <div className="fixed inset-0 bg-gray-500/30" onClick={onClose}></div>
+      <div className="relative w-1/3 h-full bg-white rounded-l-xl border-l border-gray-200 shadow-lg overflow-auto">
+        <div className="sticky top-0 bg-blue-50 border-b border-gray-200 p-4 flex justify-between items-center rounded-tl-xl">
+          <h2 className="pixel-text text-gray-700 text-lg">MyBox</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
             <X size={24} />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b-4 border-black">
+        <div className="flex border-b border-gray-200">
           <button
-            className={`flex-1 p-2 pixel-text text-xs ${activeTab === "all" ? "bg-blue-200" : "bg-gray-100"}`}
+            className={`flex-1 p-3 pixel-text text-xs transition-colors ${
+              activeTab === "all" 
+                ? "bg-blue-50 text-blue-600" 
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
             onClick={() => setActiveTab("all")}
           >
             All Objects
           </button>
           <button
-            className={`flex-1 p-2 pixel-text text-xs ${activeTab === "components" ? "bg-blue-200" : "bg-gray-100"}`}
+            className={`flex-1 p-3 pixel-text text-xs transition-colors ${
+              activeTab === "components" 
+                ? "bg-blue-50 text-blue-600" 
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
             onClick={() => setActiveTab("components")}
           >
             Components
           </button>
           <button
-            className={`flex-1 p-2 pixel-text text-xs ${activeTab === "synObjects" ? "bg-blue-200" : "bg-gray-100"}`}
+            className={`flex-1 p-3 pixel-text text-xs transition-colors ${
+              activeTab === "synObjects" 
+                ? "bg-blue-50 text-blue-600" 
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
             onClick={() => setActiveTab("synObjects")}
           >
             SynObjects
           </button>
         </div>
 
-        {/* Synthesis area */}
         {activeTab !== "synObjects" && (
-          <div className="p-4 border-b-4 border-black">
-            <div className="pixel-text text-sm mb-2">Synthesis Area</div>
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <div className="pixel-text text-gray-700 text-sm mb-2">Synthesis Area</div>
             <div className="flex justify-between items-center mb-2">
               <div className="text-xs text-gray-600">Select up to 3 objects to synthesize</div>
               <button
-                className={`game-button px-3 py-1 text-xs ${selectedForSynthesis.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`game-button synthesis-button px-3 py-1 text-xs ${
+                  selectedForSynthesis.length === 0 
+                    ? "opacity-50 cursor-not-allowed" 
+                    : ""
+                }`}
                 onClick={startSynthesis}
                 disabled={selectedForSynthesis.length === 0}
               >
@@ -303,11 +317,11 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
               </button>
             </div>
 
-            <div className="flex gap-2 h-20 bg-gray-100 border-2 border-black p-2">
+            <div className="flex gap-2 h-20 bg-white rounded-lg border border-gray-200 p-2">
               {selectedForSynthesis.map((obj, index) => (
                 <div
                   key={index}
-                  className="h-full aspect-square bg-white border-2 border-black flex items-center justify-center relative"
+                  className="h-full aspect-square bg-white rounded-lg border border-gray-200 flex items-center justify-center relative"
                 >
                   {obj.type === "fish" && (
                     <div className="w-8 h-6 relative">
@@ -331,7 +345,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                   )}
 
                   <button
-                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white flex items-center justify-center rounded-full"
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 hover:bg-red-500 text-white flex items-center justify-center rounded-full transition-colors"
                     onClick={() => toggleObjectSelection(obj)}
                   >
                     ×
@@ -344,7 +358,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                 .map((_, index) => (
                   <div
                     key={`empty-${index}`}
-                    className="h-full aspect-square bg-white border-2 border-dashed border-gray-400 flex items-center justify-center"
+                    className="h-full aspect-square bg-white rounded-lg border border-dashed border-gray-300 flex items-center justify-center"
                   >
                     <Plus size={16} className="text-gray-400" />
                   </div>
@@ -353,9 +367,8 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
           </div>
         )}
 
-        {/* Objects list */}
         <div className="p-4">
-          <div className="pixel-text text-sm mb-4">
+          <div className="pixel-text text-gray-700 text-sm mb-4">
             {activeTab === "all"
               ? "All Objects"
               : activeTab === "components"
@@ -367,12 +380,16 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
             {filteredObjects.map((object) => (
               <div
                 key={object.id}
-                className={`pixel-card p-3 ${selectedForSynthesis.some((item) => item.id === object.id) ? "border-blue-500 border-4" : ""} cursor-pointer`}
+                className={`pixel-card p-3 ${
+                  selectedForSynthesis.some((item) => item.id === object.id)
+                    ? "border-blue-200 bg-blue-50"
+                    : "border-gray-200 hover:border-blue-200"
+                } cursor-pointer transition-all duration-200 rounded-lg`}
                 draggable
                 onDragStart={(e) => handleDragStart(e, object)}
                 onClick={() => handleObjectClick(object)}
               >
-                <div className="w-full aspect-square bg-blue-100 mb-2 flex items-center justify-center">
+                <div className="w-full aspect-square bg-gray-50 rounded-lg mb-2 flex items-center justify-center">
                   {object.type === "fish" && (
                     <div className="w-12 h-8 relative">
                       <div className="absolute w-4 h-4" style={{ left: "0px", top: "2px", backgroundColor: object.color }}></div>
@@ -402,23 +419,25 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                   )}
                 </div>
 
-                <div className="pixel-text text-xs">{object.name}</div>
+                <div className="pixel-text text-gray-700 text-xs">{object.name}</div>
                 <div className="flex justify-between items-center">
-                  <div className="text-xs text-gray-500">{object.type === "synObject" ? "SynObject" : object.type}</div>
+                  <div className="text-xs text-gray-500">
+                    {object.type === "synObject" ? "SynObject" : object.type}
+                  </div>
                   {object.rarity && (
                     <div
                       className="text-xs"
                       style={{
                         color:
                           object.rarity === "Common"
-                            ? "gray"
+                            ? "#9CA3AF"
                             : object.rarity === "Uncommon"
-                              ? "green"
+                              ? "#34D399"
                               : object.rarity === "Rare"
-                                ? "blue"
+                                ? "#60A5FA"
                                 : object.rarity === "Epic"
-                                  ? "purple"
-                                  : "orange",
+                                  ? "#A78BFA"
+                                  : "#F59E0B",
                       }}
                     >
                       {object.rarity}
@@ -427,7 +446,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                 </div>
 
                 {object.projectId && (
-                  <div className="mt-1 text-xs bg-gray-100 px-1 inline-block">
+                  <div className="mt-1 text-xs bg-gray-50 px-2 py-1 rounded-md inline-block text-gray-600">
                     Project: {object.projectId.replace("project", "")}
                   </div>
                 )}
@@ -437,7 +456,6 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
         </div>
       </div>
 
-      {/* Crafting Modal */}
       {showCraftingModal && (
         <CraftingModal
           objects={selectedForSynthesis}
@@ -446,7 +464,6 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
         />
       )}
 
-      {/* Object Action Modal */}
       {selectedObject && (
         <ObjectActionModal
           object={selectedObject}

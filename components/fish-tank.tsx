@@ -573,7 +573,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         </div>
 
         <div
-          className={`fish-tank w-full h-[400px] relative rank-${tankRank}`}
+          className="fish-tank w-full h-[480px] relative rank-${tankRank}"
           style={{
             backgroundImage: tankBackground ? `url(${tankBackground})` : undefined,
             backgroundSize: 'cover',
@@ -709,7 +709,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                   <img 
                     src={obj.image} 
                     alt={obj.name} 
-                    className="w-32 h-32 object-contain"
+                    className="w-[153.6px] h-[153.6px] object-contain"
                   />
                 </DraggableObject>
               )

@@ -91,7 +91,7 @@ export default function ObjectList({ projectId, onSelectObject }: ObjectListProp
           className="pixel-card p-4 cursor-pointer"
           onClick={() => handleObjectClick(object)}
         >
-          <div className="w-full aspect-square bg-blue-900 border-2 border-black mb-2 flex items-center justify-center relative">
+          <div className="w-full aspect-square bg-blue-200 border-2 border-black mb-2 flex items-center justify-center relative">
             {objectImages[object.id] ? (
               <Image
                 src={objectImages[object.id]}

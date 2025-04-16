@@ -152,12 +152,13 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-gray-500/30" onClick={onClose}></div>
 
-      <div className="relative w-full max-w-2xl bg-white border-4 border-black">
-        <div className="bg-purple-500 border-b-4 border-black p-4 flex justify-between items-center">
-          <h2 className="pixel-text text-white text-lg">Synthesis</h2>
-          <button onClick={onClose} className="text-white">
+      <div className="relative w-full max-w-2xl bg-white rounded-xl border border-gray-200 shadow-lg">
+        {/* ヘッダー */}
+        <div className="bg-blue-50 border-b border-gray-200 p-4 flex justify-between items-center rounded-t-xl">
+          <h2 className="pixel-text text-gray-700 text-lg">Synthesis</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
             <X size={24} />
           </button>
         </div>
@@ -168,85 +169,85 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
             <div className="flex flex-wrap items-center justify-center">
               {objects.map((object, index) => (
                 <Fragment key={object.id}>
-                  <div className="pixel-card p-3 w-24">
-                    <div className="w-full aspect-square bg-blue-100 flex items-center justify-center">
+                  <div className="pixel-card p-3 w-24 bg-white rounded-lg border border-gray-200">
+                    <div className="w-full aspect-square bg-gray-50 rounded-lg flex items-center justify-center">
                       {object.type === "fish" && (
                         <div className="w-12 h-8 relative">
                           <div
-                            className="absolute w-4 h-4"
+                            className="absolute w-4 h-4 rounded-sm"
                             style={{ left: "0px", top: "2px", backgroundColor: object.color }}
                           ></div>
                           <div
-                            className="absolute w-4 h-4"
+                            className="absolute w-4 h-4 rounded-sm"
                             style={{ left: "4px", top: "0px", backgroundColor: object.color }}
                           ></div>
-                          <div className="absolute w-2 h-2 bg-black" style={{ left: "6px", top: "2px" }}></div>
+                          <div className="absolute w-2 h-2 bg-gray-600 rounded-full" style={{ left: "6px", top: "2px" }}></div>
                         </div>
                       )}
 
                       {object.type === "plant" && (
                         <div className="w-8 h-12 relative">
                           <div
-                            className="absolute w-2 h-8"
+                            className="absolute w-2 h-8 rounded-sm"
                             style={{ left: "3px", top: "4px", backgroundColor: object.color }}
                           ></div>
                           <div
-                            className="absolute w-2 h-6"
+                            className="absolute w-2 h-6 rounded-sm"
                             style={{ left: "1px", top: "2px", backgroundColor: object.color }}
                           ></div>
                         </div>
                       )}
 
                       {object.type === "decoration" && (
-                        <div className="w-10 h-10 bg-yellow-200 border-2 border-black flex items-center justify-center">
-                          <span className="pixel-text text-xs">{object.name.charAt(0).toUpperCase()}</span>
+                        <div className="w-10 h-10 bg-yellow-100 rounded-lg border border-yellow-200 flex items-center justify-center">
+                          <span className="pixel-text text-yellow-800 text-xs">{object.name.charAt(0).toUpperCase()}</span>
                         </div>
                       )}
                     </div>
-                    <div className="pixel-text text-xs text-center mt-2">{object.name}</div>
+                    <div className="pixel-text text-xs text-gray-700 text-center mt-2">{object.name}</div>
                   </div>
                   {index < objects.length - 1 && (
-                    <div className="pixel-text text-2xl mx-2">+</div>
+                    <div className="pixel-text text-2xl mx-2 text-gray-400">+</div>
                   )}
                 </Fragment>
               ))}
-              {objects.length > 0 && <div className="pixel-text text-2xl mx-2">=</div>}
+              {objects.length > 0 && <div className="pixel-text text-2xl mx-2 text-gray-400">=</div>}
             </div>
 
             {/* Result */}
-            <div className="pixel-card p-3 w-32">
-              <div className="w-full aspect-square bg-blue-100 flex items-center justify-center">
+            <div className="pixel-card p-3 w-32 bg-white rounded-lg border border-gray-200">
+              <div className="w-full aspect-square bg-gray-50 rounded-lg flex items-center justify-center">
                 {isLoading ? (
-                  <div className="animate-pulse pixel-text">...</div>
+                  <div className="animate-pulse pixel-text text-gray-400">...</div>
                 ) : (
                   imagePreviewUrl ? (
                     <img
                       src={imagePreviewUrl}
                       alt="Preview"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-lg"
                     />
                   ) : (
                     <div className="text-4xl">{resultObject?.image}</div>
                   )
                 )}
               </div>
-              <div className="pixel-text text-xs text-center mt-2">
+              <div className="pixel-text text-xs text-gray-700 text-center mt-2">
                 {isLoading ? "Synthesizing..." : resultObject?.name}
               </div>
               {!isLoading && resultObject?.rarity && (
                 <div
-                  className="text-xs text-center"
+                  className="text-xs text-center font-medium"
                   style={{
                     color:
                       resultObject.rarity === "Common"
-                        ? "gray"
+                        ? "#9CA3AF"
                         : resultObject.rarity === "Uncommon"
-                          ? "green"
+                          ? "#34D399"
                           : resultObject.rarity === "Rare"
-                            ? "blue"
+                            ? "#60A5FA"
                             : resultObject.rarity === "Epic"
-                              ? "purple"
-                              : "orange",
+                              ? "#A78BFA"
+                              : "#F59E0B",
                   }}
                 >
                   {resultObject.rarity}
@@ -257,18 +258,18 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
 
           <div className="mt-6 space-y-4">
             <div className="flex flex-col items-center gap-2">
-              <label className="pixel-text text-sm">Total Supply</label>
+              <label className="pixel-text text-sm text-gray-700">Total Supply</label>
               <input
                 type="number"
                 min="1"
                 value={totalSupply}
                 onChange={(e) => setTotalSupply(parseInt(e.target.value) || 1)}
-                className="pixel-input w-32 text-center"
+                className="rounded-lg border border-gray-200 px-3 py-2 text-center focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all duration-200 w-32"
               />
             </div>
 
             <div className="flex flex-col items-center gap-2">
-              <label className="pixel-text text-sm">Custom Image</label>
+              <label className="pixel-text text-sm text-gray-700">Custom Image</label>
               <input
                 type="file"
                 accept="image/*"
@@ -278,7 +279,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
               />
               <label
                 htmlFor="image-upload"
-                className="game-button px-4 py-2 cursor-pointer"
+                className="game-button collections-button px-4 py-2 cursor-pointer"
               >
                 Select Image
               </label>
@@ -286,7 +287,11 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
           </div>
 
           <div className="mt-8 flex justify-center">
-            <button onClick={handleMint} className="game-button px-8 py-2" disabled={isLoading}>
+            <button 
+              onClick={handleMint} 
+              className="game-button synthesis-button px-8 py-2" 
+              disabled={isLoading}
+            >
               {isLoading ? "Synthesizing..." : "Mint SynObject"}
             </button>
           </div>

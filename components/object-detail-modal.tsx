@@ -116,7 +116,7 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
         </DialogHeader>
 
         <div className="mt-4">
-          <div className="w-full aspect-square bg-blue-900 border-2 border-black mb-4 relative">
+          <div className="w-full aspect-square bg-blue-200 border-2 border-black mb-4 relative">
             {object.image && (
               <Image
                 src={getImageUrl() || ''}
