@@ -529,10 +529,10 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <div className="pixel-container p-4">
-        <div className="flex justify-between items-center mb-4">
+      <div className="pixel-container p-4 bg-stone-600">
+        <div className="flex justify-between items-center mb-4 border-b border-gray-300 pb-2">
           <div className="flex items-center">
-            <h2 className="pixel-text text-xl">
+            <h2 className="pixel-text text-xl text-white">
               {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}'s Water Tank` : "Water Tank Display"}
               {isLocalMode && <span className="text-xs ml-2 text-gray-600">(Local Mode)</span>}
             </h2>
