@@ -33,7 +33,7 @@ export default function ExplorePage() {
     }}>
       <div className="w-full max-w-6xl mx-auto p-4">
         <div className="pixel-container p-4">
-          <h1 className="pixel-text text-2xl mb-4">Project Explore</h1>
+          <h1 className="pixel-text text-2xl mb-4 font-bold">Project Explore</h1>
 
           {!selectedProject ? (
             <ProjectList onSelectProject={setSelectedProject} />

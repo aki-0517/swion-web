@@ -142,14 +142,14 @@ export default function Header({ onWalletSearch }: HeaderProps) {
     <header className="border-b">
       <div className="container mx-auto px-4 h-14 flex items-center justify-between">
         <div className="flex items-center space-x-8">
-          <Link href="/" className="pixel-text text-xl">
+          <Link href="/" className="pixel-text text-xl text-white font-bold">
             Swion
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/explore" className="pixel-text text-sm">
+            <Link href="/explore" className="pixel-text text-xl text-white font-bold text-shadow-md">
               Explore
             </Link>
-            <Link href="/collections" className="pixel-text text-sm">
+            <Link href="/collections" className="pixel-text text-xl text-white font-bold text-shadow-md">
               Collections
             </Link>
           </nav>
@@ -163,7 +163,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
               onChange={(e) => setWalletInput(e.target.value)}
               className="pixel-input px-3 py-1 w-64"
             />
-            <button type="submit" className="pixel-button ml-2 px-3 py-1">
+            <button type="submit" className="pixel-button ml-2 px-3 py-1 text-white shadow-md bg-stone-500 hover:bg-stone-600">
               Search
             </button>
           </form>

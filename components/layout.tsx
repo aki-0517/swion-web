@@ -4,7 +4,6 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Header from "@/components/header"
-import Footer from "@/components/footer"
 import MyBoxModal from "@/components/my-box-modal"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 
@@ -51,8 +50,6 @@ export default function Layout({
             />
           </button>
         )}
-
-        <Footer onExplore={() => router.push("/explore")} onCollections={() => router.push("/collections")} />
       </div>
 
       {isMyBoxOpen && <MyBoxModal onClose={() => setIsMyBoxOpen(false)} />}

@@ -260,7 +260,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
       <div className="fixed inset-0 bg-gray-500/30" onClick={onClose}></div>
       <div className="relative w-1/3 h-full bg-white rounded-l-xl border-l border-gray-200 shadow-lg overflow-auto">
         <div className="sticky top-0 bg-stone-600 text-white border-b border-stone-500 p-4 flex justify-between items-center rounded-tl-xl">
-          <h2 className="pixel-text text-lg">MyBox</h2>
+          <h2 className="pixel-text text-lg text-white">MyBox</h2>
           <button onClick={onClose} className="text-stone-300 hover:text-white transition-colors">
             <X size={24} />
           </button>
