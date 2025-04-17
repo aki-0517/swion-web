@@ -202,16 +202,16 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
     if (draggedCardRef.current === e.currentTarget) {
       return
     }
-    e.currentTarget.classList.add("border-yellow-400", "border-4")
+    e.currentTarget.classList.add("border-stone-400", "border-4")
   }
 
   const handleDragLeave = (e: React.DragEvent) => {
-    e.currentTarget.classList.remove("border-yellow-400", "border-4")
+    e.currentTarget.classList.remove("border-stone-400", "border-4")
   }
 
   const handleDrop = (e: React.DragEvent, targetObject: any) => {
     e.preventDefault()
-    e.currentTarget.classList.remove("border-yellow-400", "border-4")
+    e.currentTarget.classList.remove("border-stone-400", "border-4")
     if (draggedCardRef.current === e.currentTarget) {
       return
     }
@@ -259,9 +259,9 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
     <div className="fixed inset-0 z-50 flex">
       <div className="fixed inset-0 bg-gray-500/30" onClick={onClose}></div>
       <div className="relative w-1/3 h-full bg-white rounded-l-xl border-l border-gray-200 shadow-lg overflow-auto">
-        <div className="sticky top-0 bg-blue-50 border-b border-gray-200 p-4 flex justify-between items-center rounded-tl-xl">
-          <h2 className="pixel-text text-gray-700 text-lg">MyBox</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
+        <div className="sticky top-0 bg-stone-600 text-white border-b border-stone-500 p-4 flex justify-between items-center rounded-tl-xl">
+          <h2 className="pixel-text text-lg">MyBox</h2>
+          <button onClick={onClose} className="text-stone-300 hover:text-white transition-colors">
             <X size={24} />
           </button>
         </div>
@@ -270,7 +270,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
           <button
             className={`flex-1 p-3 pixel-text text-xs transition-colors ${
               activeTab === "all" 
-                ? "bg-blue-50 text-blue-600" 
+                ? "bg-stone-200 text-stone-800" 
                 : "bg-white text-gray-600 hover:bg-gray-50"
             }`}
             onClick={() => setActiveTab("all")}
@@ -280,7 +280,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
           <button
             className={`flex-1 p-3 pixel-text text-xs transition-colors ${
               activeTab === "components" 
-                ? "bg-blue-50 text-blue-600" 
+                ? "bg-stone-200 text-stone-800" 
                 : "bg-white text-gray-600 hover:bg-gray-50"
             }`}
             onClick={() => setActiveTab("components")}
@@ -290,7 +290,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
           <button
             className={`flex-1 p-3 pixel-text text-xs transition-colors ${
               activeTab === "synObjects" 
-                ? "bg-blue-50 text-blue-600" 
+                ? "bg-stone-200 text-stone-800" 
                 : "bg-white text-gray-600 hover:bg-gray-50"
             }`}
             onClick={() => setActiveTab("synObjects")}
@@ -300,12 +300,12 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
         </div>
 
         {activeTab !== "synObjects" && (
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <div className="pixel-text text-gray-700 text-sm mb-2">Synthesis Area</div>
+          <div className="p-4 border-b border-gray-200 bg-stone-100">
+            <div className="pixel-text text-stone-800 text-sm mb-2">Synthesis Area</div>
             <div className="flex justify-between items-center mb-2">
               <div className="text-xs text-gray-600">Select up to 3 objects to synthesize</div>
               <button
-                className={`game-button synthesis-button px-3 py-1 text-xs ${
+                className={`game-button synthesis-button px-3 py-1 text-xs bg-stone-600 text-white hover:bg-stone-700 ${
                   selectedForSynthesis.length === 0 
                     ? "opacity-50 cursor-not-allowed" 
                     : ""
@@ -368,7 +368,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
         )}
 
         <div className="p-4">
-          <div className="pixel-text text-gray-700 text-sm mb-4">
+          <div className="pixel-text text-stone-800 text-sm mb-4">
             {activeTab === "all"
               ? "All Objects"
               : activeTab === "components"
@@ -382,8 +382,8 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                 key={object.id}
                 className={`pixel-card p-3 ${
                   selectedForSynthesis.some((item) => item.id === object.id)
-                    ? "border-blue-200 bg-blue-50"
-                    : "border-gray-200 hover:border-blue-200"
+                    ? "border-stone-300 bg-stone-100"
+                    : "border-gray-200 hover:border-stone-300"
                 } cursor-pointer transition-all duration-200 rounded-lg`}
                 draggable
                 onDragStart={(e) => handleDragStart(e, object)}
@@ -419,7 +419,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                   )}
                 </div>
 
-                <div className="pixel-text text-gray-700 text-xs">{object.name}</div>
+                <div className="pixel-text text-stone-800 text-xs">{object.name}</div>
                 <div className="flex justify-between items-center">
                   <div className="text-xs text-gray-500">
                     {object.type === "synObject" ? "SynObject" : object.type}
@@ -446,7 +446,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                 </div>
 
                 {object.projectId && (
-                  <div className="mt-1 text-xs bg-gray-50 px-2 py-1 rounded-md inline-block text-gray-600">
+                  <div className="mt-1 text-xs bg-stone-100 px-2 py-1 rounded-md inline-block text-stone-600">
                     Project: {object.projectId.replace("project", "")}
                   </div>
                 )}

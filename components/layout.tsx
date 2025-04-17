@@ -30,8 +30,25 @@ export default function Layout({
 
       <div className="relative">
         {account?.address && (
-          <button className="absolute bottom-20 left-4 game-button mybox-button" onClick={() => setIsMyBoxOpen(true)}>
-            MyBox
+          <button 
+            className="absolute bottom-20 left-4 flex items-center justify-center bg-transparent border-none hover:bg-transparent focus:outline-none" 
+            onClick={() => setIsMyBoxOpen(true)}
+            style={{
+              padding: 0,
+              transition: 'transform 0.2s',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <img 
+              src="https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//treasure_red_gold.png"
+              alt="MyBox"
+              style={{
+                width: '150px',
+                height: '150px',
+                objectFit: 'contain',
+              }}
+            />
           </button>
         )}
 
