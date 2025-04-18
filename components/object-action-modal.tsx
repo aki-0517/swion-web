@@ -161,7 +161,7 @@ export default function ObjectActionModal({
             {object.type === "synObject" && (
               <button
                 onClick={handlePublish}
-                className="game-button publish-button w-full py-2"
+                className="game-button publish-button w-full py-2 opacity-50 cursor-not-allowed"
               >
                 Publish to Marketplace
               </button>
@@ -170,6 +170,7 @@ export default function ObjectActionModal({
             <button
               onClick={handlePlaceInTank}
               className="game-button collections-button w-full py-2"
+              disabled
             >
               Place in Tank
             </button>

@@ -33,7 +33,6 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
         
         if (!response.ok) {
           if (response.status === 404) {
-            // Recipe not found
             setResultObject(null);
             toast({
               title: "No recipe available.",
@@ -44,7 +43,6 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
             return;
           }
           
-          // Get more details about the error
           const errorData = await response.json();
           console.error("API error details:", errorData);
           throw new Error('APIエラー');
@@ -55,19 +53,21 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
         if (recipe) {
           setResultObject({
             name: recipe.result_name,
-            image: recipe.result_image,
-            rarity: recipe.result_rarity
+            image: recipe.image_url,
+            rarity: recipe.result_rarity,
+            price: recipe.price,
+            maxSupply: recipe.max_supply
           });
         } else {
           setResultObject(null);
         }
         
         setIsLoading(false);
-      } catch (error: any) {
-        console.error("Error:", error);
+      } catch (error) {
+        console.error("Error searching recipe:", error);
         toast({
           title: "Error",
-          description: "Failed to search recipe",
+          description: "Failed to search for recipe",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -138,7 +138,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
       // Create a new transaction
       const transaction = new Transaction()
       
-      // Call mint_syn_object
+      // Call mint_syn_object with parameters matching the contract definition
       transaction.moveCall({
         target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::mint_syn_object`,
         arguments: [
@@ -146,8 +146,10 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
           transaction.pure.vector("address", objects.map(obj => obj.id)),
           // image: vector<u8>
           transaction.pure.vector("u8", Array.from(new TextEncoder().encode(imageUrl))),
+          // max_supply: u64
+          transaction.pure.u64(BigInt(resultObject.maxSupply || 100)),
           // price: u64
-          transaction.pure.u64(BigInt(1000000)) // 1 SUI = 1,000,000 MIST
+          transaction.pure.u64(BigInt(resultObject.price || 1000))
         ],
       })
 
@@ -166,11 +168,11 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
       onComplete({
         name: resultObject.name,
         image: imageUrl,
-        rarity: resultObject.rarity
+        price: resultObject.price,
+        maxSupply: resultObject.maxSupply
       })
-
-    } catch (error: any) {
-      console.error("Mint error:", error)
+    } catch (error) {
+      console.error("Mint error:", error);
       toast({
         title: "Error",
         description: "Failed to create SynObject",
@@ -256,7 +258,11 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
                       className="w-full h-full object-cover rounded-lg"
                     />
                   ) : (
-                    <div className="text-4xl">{resultObject?.image}</div>
+                    <img
+                      src={resultObject.image}
+                      alt={resultObject.name}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
                   )
                 ) : (
                   <div className="text-xs text-center text-red-500">No recipe available</div>
