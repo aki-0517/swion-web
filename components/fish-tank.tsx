@@ -7,6 +7,7 @@ import { Fish, Plant, Decoration } from "@/components/tank-objects"
 import { Save, TrendingUp, RefreshCw } from "lucide-react"
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from "@mysten/dapp-kit"
 import { Transaction } from "@mysten/sui/transactions"
+import { SuiObjectData } from "@mysten/sui/client"
 
 interface FishTankProps {
   walletAddress: string
@@ -138,7 +139,32 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                 position_y: 50
               }
 
-              console.log(`NFT ${nftId} position:`, nftFields.position_x, nftFields.position_y)
+              // NFTの型情報を取得してSynObjectかどうか判断
+              const objectType = nftObject.data.type as string;
+              const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID ?? "";
+              const expectedSynType = `${packageId}::nft_system::SynObject`;
+              
+              // オブジェクトの型に応じて処理を分ける
+              if (objectType === expectedSynType) {
+                console.log(`SynObject ${nftId} position:`, nftFields.position_x, nftFields.position_y);
+                
+                const synObj = {
+                  id: nftId,
+                  type: "synObject",  // synObjectタイプとして識別
+                  name: nftFields.name || "",
+                  image: nftFields.image || "",
+                  x: nftFields.position_x || 50,
+                  y: nftFields.position_y || 50
+                }
+                
+                nftObjects.push(synObj);
+                positions[nftId] = {
+                  x: nftFields.position_x || 50,
+                  y: nftFields.position_y || 50
+                };
+              } else {
+                // 通常のNFTオブジェクトとして処理
+                console.log(`NFT ${nftId} position:`, nftFields.position_x, nftFields.position_y);
 
               const nft = {
                 id: nftId,
@@ -149,15 +175,16 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                 y: nftFields.position_y || 50
               }
 
-              nftObjects.push(nft)
+                nftObjects.push(nft);
               positions[nftId] = {
                 x: nftFields.position_x || 50,
                 y: nftFields.position_y || 50
+                };
               }
             }
           } catch (error) {
-            console.error(`Error fetching NFT ${nftId}:`, error)
-          }
+            console.error(`Error fetching object ${nftId}:`, error);
+}
         }
 
         setObjects(nftObjects)
@@ -269,7 +296,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       handleLocalSave()
       return
     }
-    
+
     if (!currentAccount?.address) {
       toast({
         title: "Error",
@@ -288,134 +315,250 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       return
     }
 
+    // Check if suiClient is valid (early check)
+    if (!suiClient || typeof suiClient !== 'object') {
+      toast({
+        title: "Error",
+        description: "Sui client is not available",
+        variant: "destructive",
+      })
+      console.error('suiClient is not a valid object or is unavailable')
+      return
+    }
+
     try {
       setIsLoading(true)
-      
+
       // Create transaction
       const tx = new Transaction()
-      
+
       // Set the sender for the transaction (important)
       tx.setSender(currentAccount.address)
-      
-      let hasValidObjects = false
 
-      console.log("Number of objects to save:", objects.length)
-      console.log("Tank ID:", tankId)
-      console.log("SuiClient type:", typeof suiClient, suiClient ? "exists" : "is null/undefined")
+      let objectsToProcess: { id: string; type: "nft" | "synObject"; position?: { x: number; y: number } }[] = []
 
-      // 有効なSuiオブジェクトIDをフィルタリング
-      const validNFTs = objects.filter(obj => 
-        obj.type === "nft" && isValidSuiObjectId(obj.id)
-      )
-      
-      console.log(`Found ${validNFTs.length} valid NFT objects out of ${objects.length} total objects`)
-      
-      if (validNFTs.length === 0) {
-        console.log("No valid Sui objects found")
-        toast({
-          title: "警告",
-          description: "有効なSuiオブジェクトが見つかりませんでした。NFTオブジェクトを配置してください。",
-          variant: "destructive",
-        })
-        setIsLoading(false)
-        return
-      }
+      // 1. Verify ownership and type for each object before adding to transaction
+      console.log("Verifying object ownership and types...")
+      for (const obj of objects) {
+        // Skip local objects (those without a valid Sui Object ID format)
+        if (!isValidSuiObjectId(obj.id)) {
+          console.log(`Skipping local object: ${obj.id}`);
+          continue;
+        }
 
-      // First attach NFTs to tank, then save positions
-      for (const obj of validNFTs) {
-        const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
-        
-        console.log(`Processing NFT: ${obj.id}, Position: x=${Math.floor(position.x)}, y=${Math.floor(position.y)}`)
-        
         try {
-          // Use attach_object and save_layout in one transaction
-          tx.moveCall({
-            target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::attach_object`,
-            arguments: [
-              tx.object(tankId),
-              tx.object(obj.id),
-            ],
-          })
-          
-          tx.moveCall({
-            target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::save_layout`,
-            arguments: [
-              tx.object(tankId),
-              tx.object(obj.id),
-              tx.pure.u64(Math.floor(position.x)),
-              tx.pure.u64(Math.floor(position.y)),
-            ],
-          })
-          
-          hasValidObjects = true
-          console.log(`Added attach_object and save_layout for NFT ${obj.id}`)
+          const objectDetails = await suiClient.getObject({
+            id: obj.id,
+            options: { showOwner: true, showType: true }
+          });
+
+          if (!objectDetails.data) {
+             console.warn(`Could not fetch details for object ${obj.id}. Skipping.`);
+             continue;
+          }
+
+          const ownerAddress = objectDetails.data.owner 
+            ? (typeof objectDetails.data.owner === 'object' && 'AddressOwner' in objectDetails.data.owner 
+               ? objectDetails.data.owner.AddressOwner 
+               : null)
+            : null;
+          const objectType = objectDetails.data.type;
+
+          if (ownerAddress !== currentAccount.address) {
+            console.warn(`Object ${obj.id} is not owned by the current wallet (${currentAccount.address}). Owner: ${ownerAddress}. Skipping.`);
+            toast({
+              title: "Ownership Error",
+              description: `Cannot save object ${obj.id.substring(0, 8)}... as it's not owned by you.`,
+              variant: "destructive",
+            })
+            continue;
+          }
+
+          // Check if the object type includes NFTObject or SynObject from the correct package
+          const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID;
+          const expectedNftType = `${packageId}::nft_system::NFTObject`;
+          const expectedSynType = `${packageId}::nft_system::SynObject`;
+
+          if (objectType === expectedNftType) {
+            const position = objectPositions[obj.id] || { x: obj.x, y: obj.y };
+            objectsToProcess.push({ id: obj.id, type: "nft", position: { x: Math.floor(position.x), y: Math.floor(position.y) } });
+            console.log(`Verified NFTObject: ${obj.id}`);
+          } else if (objectType === expectedSynType) {
+            objectsToProcess.push({ id: obj.id, type: "synObject" });
+            console.log(`Verified SynObject: ${obj.id}`);
+          } else {
+            console.warn(`Object ${obj.id} has an unexpected type: ${objectType}. Skipping.`);
+             toast({
+              title: "Type Error",
+              description: `Object ${obj.id.substring(0,8)}... has an unexpected type.`,
+              variant: "destructive",
+            })
+          }
+
         } catch (error) {
-          console.error(`Error preparing transaction for NFT ${obj.id}:`, error)
+           console.error(`Error fetching details for object ${obj.id}:`, error);
+           toast({
+             title: "Verification Error",
+             description: `Failed to verify object ${obj.id.substring(0,8)}...`,
+             variant: "destructive",
+           })
         }
       }
 
-      if (!hasValidObjects) {
+      console.log(`Verified ${objectsToProcess.length} objects to process.`);
+
+      if (objectsToProcess.length === 0) {
         toast({
-          title: "Information",
-          description: "No NFT objects to save on-chain, using local save",
+          title: "No Objects to Save",
+          description: "No owned NFT or SynObjects found in the tank to save.",
+          variant: "default",
         })
-        handleLocalSave()
-        return
+        setIsLoading(false)
+        // ローカルモードではないが、保存対象がない場合はローカル保存と同様の動作（hasChangesをfalseにするなど）
+        setHasChanges(false);
+        return;
       }
 
-      // Check if suiClient is valid
-      if (!suiClient || typeof suiClient !== 'object') {
-        throw new Error('suiClient is not a valid object')
+
+      // 2. Add move calls to the transaction
+      let transactionHasCalls = false;
+      for (const objToProcess of objectsToProcess) {
+        try {
+          if (objToProcess.type === "nft" && objToProcess.position) {
+            console.log(`Adding calls for NFT: ${objToProcess.id}, Position: x=${objToProcess.position.x}, y=${objToProcess.position.y}`);
+            // Attach NFT
+            tx.moveCall({
+              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::attach_object`,
+              arguments: [
+                tx.object(tankId),
+                tx.object(objToProcess.id),
+              ],
+            });
+            // Save Layout for NFT
+            tx.moveCall({
+              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::save_layout`,
+              arguments: [
+                tx.object(tankId),
+                tx.object(objToProcess.id),
+                tx.pure.u64(objToProcess.position.x),
+                tx.pure.u64(objToProcess.position.y),
+              ],
+            });
+            transactionHasCalls = true;
+          } else if (objToProcess.type === "synObject") {
+            // SynObjectの場合の位置情報も取得
+            const position = objectPositions[objToProcess.id] || { x: 0, y: 0 };
+            console.log(`Adding call for SynObject: ${objToProcess.id}, Position: x=${Math.floor(position.x)}, y=${Math.floor(position.y)}`);
+            
+            // まずSynObjectをタンクに添付
+            tx.moveCall({
+              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::attach_syn_object`,
+              arguments: [
+                tx.object(tankId),
+                tx.object(objToProcess.id),
+              ],
+            });
+            
+            // 次にSynObjectの位置情報を更新
+            tx.moveCall({
+              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::update_syn_position`,
+              arguments: [
+                tx.object(tankId),
+                tx.object(objToProcess.id),
+                tx.pure.u64(Math.floor(position.x)),
+                tx.pure.u64(Math.floor(position.y)),
+              ],
+            });
+            
+            transactionHasCalls = true;
+          }
+        } catch (error) {
+           console.error(`Error preparing transaction for object ${objToProcess.id}:`, error);
+           toast({
+             title: "Transaction Error",
+             description: `Failed to prepare transaction for object ${objToProcess.id.substring(0,8)}...`,
+             variant: "destructive",
+           })
+        }
       }
 
-      // Build the transaction
-      await tx.build({ client: suiClient })
+       if (!transactionHasCalls) {
+        toast({
+          title: "No Operations",
+          description: "No valid operations to perform.",
+          variant: "default",
+        })
+        setIsLoading(false);
+        setHasChanges(false); // Reset changes if nothing was added to tx
+        return;
+      }
 
-      console.log("Transaction ready to send")
-      
+
+      // 3. Build and Execute Transaction
+      console.log("Building transaction...")
+      // Build the transaction (this performs the dry run)
+      await tx.build({ client: suiClient }); // Pass the suiClient instance here
+
+      console.log("Transaction built successfully. Ready to sign and execute.");
+
       // Execute the transaction
       const result = await signAndExecute({
         transaction: tx,
-      })
-      
-      console.log("Transaction result:", result)
+      });
+
+      console.log("Transaction result:", result);
+
 
       toast({
         title: "Save Complete",
         description: "Water tank layout has been saved successfully",
-      })
-      
-      setHasChanges(false)
-      
+      });
+
+      setHasChanges(false);
+
       // レイアウト保存が完了したら、トランザクション数を増やし、ランクアップ判定
       setTxCount(prev => {
-        const newCount = prev + 1
+        const newCount = prev + 1;
         // 10トランザクションごとにアップグレード可能に
         if (newCount % 10 === 0) {
-          setCanUpgrade(true)
+          setCanUpgrade(true);
           toast({
             title: "Upgrade Available!",
             description: "You can now upgrade your water tank to the next level!",
-          })
+          });
         }
-        return newCount
-      })
-      
+        return newCount;
+      });
+
       // Refresh the tank data to show the updated child_objects
-      await fetchWaterTankSBT()
-      
+      await fetchWaterTankSBT();
+
     } catch (error) {
-      console.error("Layout save error:", error)
+      console.error("Layout save error:", error);
+      // エラーメッセージをより具体的に表示
+      let description = "Failed to save water tank layout.";
+       if (error instanceof Error) {
+        if (error.message.includes("CommandArgumentError")) {
+          description += " There might be an issue with object types or ownership.";
+        } else if (error.message.includes("InsufficientGas")) {
+          description += " Insufficient gas budget for the transaction.";
+        } else {
+           description += ` ${error.message}`;
+        }
+      } else {
+        description += ` ${String(error)}`;
+      }
+
       toast({
         title: "Error",
-        description: "Failed to save water tank layout: " + (error instanceof Error ? error.message : String(error)),
+        description: description,
         variant: "destructive",
-      })
-      
-      // オンチェーン保存に失敗したら、ローカル保存に切り替え
-      handleLocalSave()
+      });
+
+      // オンチェーン保存に失敗した場合でもローカル保存はしない方が混乱を招かないかも
+      // handleLocalSave()
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
