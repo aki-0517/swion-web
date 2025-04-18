@@ -16,7 +16,6 @@ interface CraftingModalProps {
 export default function CraftingModal({ objects, onComplete, onClose }: CraftingModalProps) {
   const [resultObject, setResultObject] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [totalSupply, setTotalSupply] = useState<number>(1)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("")
   const { toast } = useToast()
@@ -24,31 +23,63 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
 
   useEffect(() => {
-    async function calculateCraftingResult() {
+    async function searchRecipe() {
       try {
-        // クラフトの結果を計算するAPIを呼び出し
-        const { data: result, error } = await supabase
-          .rpc('calculate_crafting_result', {
-            object_ids: objects.map(obj => obj.id),
-            object_types: objects.map(obj => obj.type)
-          })
-
-        if (error) throw error
-
-        setResultObject(result)
-        setIsLoading(false)
+        const objectNames = objects.map(obj => encodeURIComponent(obj.name)).sort().join(',');
+        
+        console.log("Sending object names to API:", objectNames);
+        
+        const response = await fetch(`/api/synrecipes?names=${objectNames}`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            // Recipe not found
+            setResultObject(null);
+            toast({
+              title: "No recipe available.",
+              description: "There is no recipe that can be synthesized with the selected item combination",
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
+          
+          // Get more details about the error
+          const errorData = await response.json();
+          console.error("API error details:", errorData);
+          throw new Error('APIエラー');
+        }
+        
+        const { data: recipe } = await response.json();
+        
+        if (recipe) {
+          setResultObject({
+            name: recipe.result_name,
+            image: recipe.result_image,
+            rarity: recipe.result_rarity
+          });
+        } else {
+          setResultObject(null);
+        }
+        
+        setIsLoading(false);
       } catch (error: any) {
+        console.error("Error:", error);
         toast({
           title: "Error",
-          description: "Failed to calculate crafting result",
+          description: "Failed to search recipe",
           variant: "destructive",
-        })
-        setIsLoading(false)
+        });
+        setIsLoading(false);
       }
     }
 
-    calculateCraftingResult()
-  }, [objects])
+    if (objects && objects.length > 0) {
+      searchRecipe();
+    } else {
+      setIsLoading(false);
+    }
+  }, [objects]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -75,23 +106,23 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
   const handleMint = async () => {
     if (!account?.address) {
       toast({
-        title: "エラー",
-        description: "ウォレットを接続してください",
+        title: "Error",
+        description: "Please connect your wallet",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!resultObject) {
+      toast({
+        title: "Error",
+        description: "No synthesis recipe found",
         variant: "destructive",
       })
       return
     }
 
     try {
-      if (totalSupply < 1) {
-        toast({
-          title: "エラー",
-          description: "総供給量は1以上である必要があります",
-          variant: "destructive",
-        })
-        return
-      }
-
       let imageUrl = resultObject.image
       if (selectedImage) {
         const fileName = `${Date.now()}_${selectedImage.name}`
@@ -104,10 +135,10 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
         imageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/suiden/${fileName}`
       }
 
-      // 新しいトランザクションの作成
+      // Create a new transaction
       const transaction = new Transaction()
       
-      // mint_syn_objectを呼び出し
+      // Call mint_syn_object
       transaction.moveCall({
         target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::mint_syn_object`,
         arguments: [
@@ -115,25 +146,23 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
           transaction.pure.vector("address", objects.map(obj => obj.id)),
           // image: vector<u8>
           transaction.pure.vector("u8", Array.from(new TextEncoder().encode(imageUrl))),
-          // max_supply: u64
-          transaction.pure.u64(BigInt(totalSupply)),
           // price: u64
           transaction.pure.u64(BigInt(1000000)) // 1 SUI = 1,000,000 MIST
         ],
       })
 
-      // トランザクションを実行
+      // Execute transaction
       await signAndExecuteTransaction({
         transaction
       })
 
-      // 成功通知
+      // Success notification
       toast({
-        title: "成功",
-        description: "SynObjectの作成に成功しました！",
+        title: "Success",
+        description: "SynObject created successfully!",
       })
 
-      // モーダルを閉じる
+      // Close modal
       onComplete({
         name: resultObject.name,
         image: imageUrl,
@@ -143,8 +172,8 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
     } catch (error: any) {
       console.error("Mint error:", error)
       toast({
-        title: "エラー",
-        description: "SynObjectの作成に失敗しました",
+        title: "Error",
+        description: "Failed to create SynObject",
         variant: "destructive",
       })
     }
@@ -155,7 +184,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
       <div className="fixed inset-0 bg-gray-500/30" onClick={onClose}></div>
 
       <div className="relative w-full max-w-2xl bg-white rounded-xl border border-gray-200 shadow-lg">
-        {/* ヘッダー */}
+        {/* Header */}
         <div className="bg-blue-50 border-b border-gray-200 p-4 flex justify-between items-center rounded-t-xl">
           <h2 className="pixel-text text-gray-700 text-lg">Synthesis</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
@@ -219,7 +248,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
               <div className="w-full aspect-square bg-gray-50 rounded-lg flex items-center justify-center">
                 {isLoading ? (
                   <div className="animate-pulse pixel-text text-gray-400">...</div>
-                ) : (
+                ) : resultObject ? (
                   imagePreviewUrl ? (
                     <img
                       src={imagePreviewUrl}
@@ -229,10 +258,12 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
                   ) : (
                     <div className="text-4xl">{resultObject?.image}</div>
                   )
+                ) : (
+                  <div className="text-xs text-center text-red-500">No recipe available</div>
                 )}
               </div>
               <div className="pixel-text text-xs text-gray-700 text-center mt-2">
-                {isLoading ? "Synthesizing..." : resultObject?.name}
+                {isLoading ? "Synthesizing..." : resultObject ? resultObject.name : "Unknown item"}
               </div>
               {!isLoading && resultObject?.rarity && (
                 <div
@@ -256,48 +287,21 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
             </div>
           </div>
 
-          <div className="mt-6 space-y-4">
-            <div className="flex flex-col items-center gap-2">
-              <label className="pixel-text text-sm text-gray-700">Total Supply</label>
-              <input
-                type="number"
-                min="1"
-                value={totalSupply}
-                onChange={(e) => setTotalSupply(parseInt(e.target.value) || 1)}
-                className="rounded-lg border border-gray-200 px-3 py-2 text-center focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all duration-200 w-32"
-              />
-            </div>
-
-            <div className="flex flex-col items-center gap-2">
-              <label className="pixel-text text-sm text-gray-700">Custom Image</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-                id="image-upload"
-              />
-              <label
-                htmlFor="image-upload"
-                className="game-button collections-button px-4 py-2 cursor-pointer"
-              >
-                Select Image
-              </label>
-            </div>
-          </div>
-
-          <div className="mt-8 flex justify-center">
-            <button 
-              onClick={handleMint} 
-              className="game-button synthesis-button px-8 py-2" 
-              disabled={isLoading}
-            >
-              {isLoading ? "Synthesizing..." : "Mint SynObject"}
-            </button>
-          </div>
+          {!isLoading && resultObject && (
+            <>
+              <div className="mt-8 flex justify-center">
+                <button 
+                  onClick={handleMint} 
+                  className="game-button synthesis-button px-8 py-2" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Synthesizing..." : "Mint SynObject"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   )
 }
-
