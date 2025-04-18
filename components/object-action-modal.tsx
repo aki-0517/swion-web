@@ -170,7 +170,6 @@ export default function ObjectActionModal({
             <button
               onClick={handlePlaceInTank}
               className="game-button collections-button w-full py-2"
-              disabled
             >
               Place in Tank
             </button>
