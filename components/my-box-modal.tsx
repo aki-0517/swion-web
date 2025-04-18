@@ -8,9 +8,19 @@ import ObjectActionModal from "./object-action-modal"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit"
 import { Transaction } from "@mysten/sui/transactions"
+import Image from "next/image"
+import { supabase } from "@/lib/supabaseClient"
 
 interface MyBoxModalProps {
   onClose: () => void
+}
+
+interface Project {
+  id: number
+  name: string
+  description: string
+  logo_image: string | null
+  url: string | null
 }
 
 export default function MyBoxModal({ onClose }: MyBoxModalProps) {
@@ -23,6 +33,9 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
   const signTransaction = useSignTransaction()
+  const [projects, setProjects] = useState<{ [key: number]: Project }>({})
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedFilter, setSelectedFilter] = useState<string>("all")
 
   useEffect(() => {
     async function fetchUserObjects() {
@@ -83,6 +96,34 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
 
     fetchUserObjects()
   }, [account?.address, suiClient])
+
+  useEffect(() => {
+    // プロジェクト情報の取得
+    async function fetchProjects() {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, description, logo_image, url')
+
+      if (error) {
+        toast({
+          title: "エラー",
+          description: "プロジェクト情報の読み込みに失敗しました",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // プロジェクト情報をIDをキーとしたオブジェクトに変換
+      const projectMap = (data || []).reduce((acc, project) => {
+        acc[project.id] = project
+        return acc
+      }, {} as { [key: number]: Project })
+
+      setProjects(projectMap)
+    }
+
+    fetchProjects()
+  }, [toast])
 
   // 以下、ドラッグ＆ドロップやその他のハンドラー等
   const handleDragStart = (e: React.DragEvent, object: any) => {
@@ -412,10 +453,36 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                   )}
 
                   {object.type === "synObject" && (
-                    <img src={object.image} alt={object.name} className="w-full h-full object-contain" />
+                    <>
+                      <img src={object.image} alt={object.name} className="w-full h-full object-contain" />
+                      {object.projectId && projects[object.projectId]?.logo_image && typeof projects[object.projectId].logo_image === 'string' && (
+                        <div className="absolute top-2 right-2 w-12 h-12 bg-white rounded-full border-2 border-black overflow-hidden">
+                          <Image
+                            src={projects[object.projectId].logo_image as string}
+                            alt={`Project logo`}
+                            fill
+                            className="object-cover"
+                            sizes="48px"
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
                   {object.type === "nft" && (
-                    <img src={object.image} alt={object.name} className="w-full h-full object-contain" />
+                    <>
+                      <img src={object.image} alt={object.name} className="w-full h-full object-contain" />
+                      {object.projectId && projects[object.projectId]?.logo_image && typeof projects[object.projectId].logo_image === 'string' && (
+                        <div className="absolute top-2 right-2 w-12 h-12 bg-white rounded-full border-2 border-black overflow-hidden">
+                          <Image
+                            src={projects[object.projectId].logo_image as string}
+                            alt={`Project logo`}
+                            fill
+                            className="object-cover"
+                            sizes="48px"
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 

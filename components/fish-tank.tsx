@@ -671,224 +671,231 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const txToNextRank = 10 - (txCount % 10)
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <div className="pixel-container p-4 bg-stone-600">
-        <div className="flex justify-between items-center mb-4 border-b border-gray-300 pb-2">
-          <div className="flex items-center">
-            <h2 className="pixel-text text-xl text-white font-bold">
-              {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}'s Water Tank` : "Water Tank Display"}
-              {isLocalMode && <span className="text-xs ml-2 text-gray-600">(Local Mode)</span>}
-            </h2>
-            {walletAddress && (
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="ml-2 p-1 rounded bg-blue-100 hover:bg-blue-200 transition-colors"
-                title="Refresh tank data"
-              >
-                <RefreshCw size={16} className={`${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-            )}
-          </div>
-
-          {walletAddress && (
-            <div className="flex items-center">
-              <div className="bg-gray-200 border-2 border-black p-1 flex items-center">
-                <div className="pixel-text text-xs mr-2">Rank {tankRank}</div>
-                <div className="w-24 h-4 bg-gray-300 border border-black">
-                  <div className="h-full bg-blue-500" style={{ width: `${progressToNextRank}%` }}></div>
-                </div>
-                {canUpgrade ? (
+    <>
+      {walletAddress ? (
+        <div className="w-full max-w-4xl mx-auto">
+          <div className="pixel-container p-4 bg-stone-600">
+            <div className="flex justify-between items-center mb-4 border-b border-gray-300 pb-2">
+              <div className="flex items-center">
+                <h2 className="pixel-text text-xl text-white font-bold">
+                  {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}'s Water Tank`}
+                  {isLocalMode && <span className="text-xs ml-2 text-gray-600">(Local Mode)</span>}
+                </h2>
+                {walletAddress && (
                   <button
-                    onClick={handleUpgrade}
-                    disabled={isLoading}
-                    className={`game-button ml-2 px-2 py-1 flex items-center gap-1 ${isLoading ? 'bg-gray-400' : 'bg-green-500'}`}
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className="ml-2 p-1 rounded bg-blue-100 hover:bg-blue-200 transition-colors"
+                    title="Refresh tank data"
                   >
-                    <TrendingUp size={12} />
-                    <span className="text-xs">Upgrade</span>
+                    <RefreshCw size={16} className={`${isRefreshing ? 'animate-spin' : ''}`} />
                   </button>
-                ) : (
-                  <div className="ml-2 text-xs">{txToNextRank} more for next rank</div>
                 )}
               </div>
+
+              {walletAddress && (
+                <div className="flex items-center">
+                  <div className="bg-gray-200 border-2 border-black p-1 flex items-center">
+                    <div className="pixel-text text-xs mr-2">Rank {tankRank}</div>
+                    <div className="w-24 h-4 bg-gray-300 border border-black">
+                      <div className="h-full bg-blue-500" style={{ width: `${progressToNextRank}%` }}></div>
+                    </div>
+                    {canUpgrade ? (
+                      <button
+                        onClick={handleUpgrade}
+                        disabled={isLoading}
+                        className={`game-button ml-2 px-2 py-1 flex items-center gap-1 ${isLoading ? 'bg-gray-400' : 'bg-green-500'}`}
+                      >
+                        <TrendingUp size={12} />
+                        <span className="text-xs">Upgrade</span>
+                      </button>
+                    ) : (
+                      <div className="ml-2 text-xs">{txToNextRank} more for next rank</div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div
-          className="fish-tank w-full h-[480px] relative rank-${tankRank}"
-          style={{
-            backgroundImage: tankBackground ? `url(${tankBackground})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          {/* Underwater background elements - enhanced based on rank */}
-          {walletAddress && (
-            <>
-              {/* Hide existing background elements if a background image exists */}
-              {!tankBackground && (
+            <div
+              className="fish-tank w-full h-[480px] relative rank-${tankRank}"
+              style={{
+                backgroundImage: tankBackground ? `url(${tankBackground})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+            >
+              {isLoading || isRefreshing ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="pixel-text text-4xl text-white font-bold animate-pulse">
+                    Loading....
+                  </p>
+                </div>
+              ) : (
                 <>
-                  <div className={`underwater-bg rank-${tankRank}`}></div>
-
-                  {/* More decorations based on rank */}
-                  <div className="underwater-plant" style={{ left: "10%" }}></div>
-                  <div className="underwater-plant" style={{ left: "25%", height: "24px" }}></div>
-                  <div className="underwater-rock" style={{ left: "40%" }}></div>
-                  <div className="underwater-plant" style={{ left: "60%" }}></div>
-                  <div className="underwater-rock" style={{ left: "75%" }}></div>
-                  <div className="underwater-plant" style={{ left: "85%", height: "28px" }}></div>
-
-                  {tankRank >= 2 && (
+                  {!tankBackground && (
                     <>
-                      <div className="underwater-plant" style={{ left: "15%", height: "32px" }}></div>
-                      <div className="underwater-rock" style={{ left: "30%", width: "32px" }}></div>
+                      <div className={`underwater-bg rank-${tankRank}`}></div>
+
+                      {/* More decorations based on rank */}
+                      <div className="underwater-plant" style={{ left: "10%" }}></div>
+                      <div className="underwater-plant" style={{ left: "25%", height: "24px" }}></div>
+                      <div className="underwater-rock" style={{ left: "40%" }}></div>
+                      <div className="underwater-plant" style={{ left: "60%" }}></div>
+                      <div className="underwater-rock" style={{ left: "75%" }}></div>
+                      <div className="underwater-plant" style={{ left: "85%", height: "28px" }}></div>
+
+                      {tankRank >= 2 && (
+                        <>
+                          <div className="underwater-plant" style={{ left: "15%", height: "32px" }}></div>
+                          <div className="underwater-rock" style={{ left: "30%", width: "32px" }}></div>
+                        </>
+                      )}
+
+                      {tankRank >= 3 && (
+                        <>
+                          <div className="underwater-plant" style={{ left: "50%", height: "36px" }}></div>
+                          <div className="underwater-rock" style={{ left: "65%", width: "28px" }}></div>
+                          <div className="pixel-text text-xs absolute" style={{ left: "20%", top: "30%" }}>
+                            ✨
+                          </div>
+                        </>
+                      )}
+
+                      {tankRank >= 4 && (
+                        <>
+                          <div className="pixel-text text-xs absolute" style={{ left: "40%", top: "20%" }}>
+                            💎
+                          </div>
+                          <div className="pixel-text text-xs absolute" style={{ left: "70%", top: "40%" }}>
+                            🌟
+                          </div>
+                        </>
+                      )}
+
+                      {tankRank >= 5 && (
+                        <>
+                          <div className="pixel-text text-xs absolute" style={{ left: "30%", top: "15%" }}>
+                            👑
+                          </div>
+                          <div className="pixel-text text-xs absolute" style={{ left: "60%", top: "25%" }}>
+                            🏆
+                          </div>
+                          <div className="pixel-text text-xs absolute" style={{ left: "80%", top: "35%" }}>
+                            💫
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
-
-                  {tankRank >= 3 && (
-                    <>
-                      <div className="underwater-plant" style={{ left: "50%", height: "36px" }}></div>
-                      <div className="underwater-rock" style={{ left: "65%", width: "28px" }}></div>
-                      <div className="pixel-text text-xs absolute" style={{ left: "20%", top: "30%" }}>
-                        ✨
-                      </div>
-                    </>
-                  )}
-
-                  {tankRank >= 4 && (
-                    <>
-                      <div className="pixel-text text-xs absolute" style={{ left: "40%", top: "20%" }}>
-                        💎
-                      </div>
-                      <div className="pixel-text text-xs absolute" style={{ left: "70%", top: "40%" }}>
-                        🌟
-                      </div>
-                    </>
-                  )}
-
-                  {tankRank >= 5 && (
-                    <>
-                      <div className="pixel-text text-xs absolute" style={{ left: "30%", top: "15%" }}>
-                        👑
-                      </div>
-                      <div className="pixel-text text-xs absolute" style={{ left: "60%", top: "25%" }}>
-                        🏆
-                      </div>
-                      <div className="pixel-text text-xs absolute" style={{ left: "80%", top: "35%" }}>
-                        💫
-                      </div>
-                    </>
-                  )}
+                  {objects.map((obj) => {
+                    if (obj.type === "fish") {
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={obj.x}
+                          y={obj.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <Fish color={obj.color} x={0} y={0} />
+                        </DraggableObject>
+                      )
+                    } else if (obj.type === "plant") {
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={obj.x}
+                          y={obj.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <Plant color={obj.color} x={0} y={0} />
+                        </DraggableObject>
+                      )
+                    } else if (obj.type === "decoration") {
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={obj.x}
+                          y={obj.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <Decoration name={obj.name} x={0} y={0} />
+                        </DraggableObject>
+                      )
+                    } else if (obj.type === "synObject") {
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={obj.x}
+                          y={obj.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <div className="text-4xl">{obj.image}</div>
+                        </DraggableObject>
+                      )
+                    } else if (obj.type === "nft") {
+                      const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={position.x}
+                          y={position.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <img 
+                            src={obj.image} 
+                            alt={obj.name} 
+                            className="w-[153.6px] h-[153.6px] object-contain"
+                          />
+                        </DraggableObject>
+                      )
+                    }
+                    return null
+                  })}
                 </>
               )}
-            </>
-          )}
-
-          {objects.map((obj) => {
-            if (obj.type === "fish") {
-              return (
-                <DraggableObject
-                  key={obj.id}
-                  id={obj.id}
-                  x={obj.x}
-                  y={obj.y}
-                  isOwner={isOwner}
-                  onMove={handleObjectMove}
-                >
-                  <Fish color={obj.color} x={0} y={0} />
-                </DraggableObject>
-              )
-            } else if (obj.type === "plant") {
-              return (
-                <DraggableObject
-                  key={obj.id}
-                  id={obj.id}
-                  x={obj.x}
-                  y={obj.y}
-                  isOwner={isOwner}
-                  onMove={handleObjectMove}
-                >
-                  <Plant color={obj.color} x={0} y={0} />
-                </DraggableObject>
-              )
-            } else if (obj.type === "decoration") {
-              return (
-                <DraggableObject
-                  key={obj.id}
-                  id={obj.id}
-                  x={obj.x}
-                  y={obj.y}
-                  isOwner={isOwner}
-                  onMove={handleObjectMove}
-                >
-                  <Decoration name={obj.name} x={0} y={0} />
-                </DraggableObject>
-              )
-            } else if (obj.type === "synObject") {
-              return (
-                <DraggableObject
-                  key={obj.id}
-                  id={obj.id}
-                  x={obj.x}
-                  y={obj.y}
-                  isOwner={isOwner}
-                  onMove={handleObjectMove}
-                >
-                  <div className="text-4xl">{obj.image}</div>
-                </DraggableObject>
-              )
-            } else if (obj.type === "nft") {
-              const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
-              return (
-                <DraggableObject
-                  key={obj.id}
-                  id={obj.id}
-                  x={position.x}
-                  y={position.y}
-                  isOwner={isOwner}
-                  onMove={handleObjectMove}
-                >
-                  <img 
-                    src={obj.image} 
-                    alt={obj.name} 
-                    className="w-[153.6px] h-[153.6px] object-contain"
-                  />
-                </DraggableObject>
-              )
-            }
-            return null
-          })}
-
-          {!walletAddress && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="pixel-text text-lg text-gray-600">Please enter a wallet address</p>
             </div>
-          )}
+
+            {isOwner && (
+              <div className="mt-2 text-xs text-gray-600">
+                {objects.length === 0
+                  ? "Drag objects from MyBox to place them in the tank"
+                  : "Drag placed objects to change their position"}
+              </div>
+            )}
+
+            {isOwner && hasChanges && (
+              <div className="flex justify-end mt-4">
+                <button 
+                  onClick={handleAttachAndSave}
+                  disabled={isLoading}
+                  className={`game-button px-4 py-2 flex items-center gap-2 ${isLoading ? 'bg-gray-400' : 'bg-green-500'}`}
+                >
+                  <Save size={16} />
+                  <span>{isLoading ? "Saving..." : "Save Layout"}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-
-        {isOwner && (
-          <div className="mt-2 text-xs text-gray-600">
-            {objects.length === 0
-              ? "Drag objects from MyBox to place them in the tank"
-              : "Drag placed objects to change their position"}
-          </div>
-        )}
-
-        {isOwner && hasChanges && (
-          <div className="flex justify-end mt-4">
-            <button 
-              onClick={handleAttachAndSave}
-              disabled={isLoading}
-              className={`game-button px-4 py-2 flex items-center gap-2 ${isLoading ? 'bg-gray-400' : 'bg-green-500'}`}
-            >
-              <Save size={16} />
-              <span>{isLoading ? "Saving..." : "Save Layout"}</span>
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+      ) : (
+        <div className="w-full h-[calc(100vh-4rem)] flex items-center justify-center">
+          <p className="pixel-text text-5xl text-white font-bold animate-pulse">
+            Connect Wallet !!
+          </p>
+        </div>
+      )}
+    </>
   )
 }
 
