@@ -26,7 +26,7 @@ export default function ClientProviders({
   return (
     <QueryClientProvider client={queryClient}>
       {/* SuiClientProvider でネットワークの設定を提供 */}
-      <SuiClientProvider networks={networkConfig} defaultNetwork="devnet">
+      <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
         {/* WalletProvider でウォレットの状態を全体に渡す */}
         <WalletProvider autoConnect={false}>
           {children}
