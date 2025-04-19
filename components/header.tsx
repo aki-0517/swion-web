@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Menu, X } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { ConnectButton, useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit"
@@ -27,6 +27,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isMinting, setIsMinting] = useState(false)
   const router = useRouter()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
@@ -179,8 +180,16 @@ export default function Header({ onWalletSearch }: HeaderProps) {
               Collections
             </Link>
           </nav>
+          
+          {/* モバイルメニューボタン */}
+          <button 
+            className="md:hidden text-white"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <Menu size={24} />
+          </button>
         </div>
-        <div className="flex items-center">
+        <div className="hidden md:flex items-center">
           <form onSubmit={handleSearch} className="flex">
             <input
               type="text"
@@ -224,6 +233,54 @@ export default function Header({ onWalletSearch }: HeaderProps) {
           )}
         </div>
       </div>
+      
+      {/* モバイルメニュー */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 bg-stone-800 bg-opacity-95 flex flex-col">
+          <div className="p-4 flex justify-between items-center">
+            <Link href="/" className="pixel-text text-xl text-white font-bold">
+              Swion
+            </Link>
+            <button 
+              className="text-white" 
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <X size={24} />
+            </button>
+          </div>
+          <div className="flex-1 flex flex-col p-4 space-y-6">
+            <Link 
+              href="/explore" 
+              className="pixel-text text-xl text-white font-bold text-shadow-md"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Explore
+            </Link>
+            <Link 
+              href="/collections" 
+              className="pixel-text text-xl text-white font-bold text-shadow-md"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Collections
+            </Link>
+            <form onSubmit={(e) => {
+              handleSearch(e);
+              setIsMobileMenuOpen(false);
+            }} className="flex flex-col space-y-2 mt-6">
+              <input
+                type="text"
+                placeholder="Enter Wallet Address or SuiNS"
+                value={walletInput}
+                onChange={(e) => setWalletInput(e.target.value)}
+                className="pixel-input px-3 py-2 w-full"
+              />
+              <button type="submit" className="pixel-button px-3 py-2 text-white shadow-md bg-stone-500 hover:bg-stone-600 w-full">
+                Search
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   )
 }

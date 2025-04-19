@@ -725,35 +725,14 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   }
 
   return (
-    <>
-      {!walletAddress ? (
-        // ウォレット未接続時
-        <div className="w-full h-[calc(100vh-4rem)] flex items-center justify-center">
-          <p className="pixel-text text-5xl text-white font-bold animate-pulse">
-            Connect Wallet !!
-          </p>
-        </div>
-      ) : isLoading || isRefreshing ? (
-        // ローディング中
-        <div className="w-full h-[calc(100vh-4rem)] flex items-center justify-center">
-          <p className="pixel-text text-4xl text-white font-bold animate-pulse">
-            Loading....
-          </p>
-        </div>
-      ) : objects.length === 0 && !tankBackground ? (
-        // Tankが存在しない時（オブジェクトがなく、背景も設定されていない）
-        <div className="w-full h-[calc(100vh-4rem)] flex items-center justify-center">
-          <p className="pixel-text text-5xl text-white font-bold animate-pulse">
-            Mint your Tank !!
-          </p>
-        </div>
-      ) : (
-        // 通常の水槽表示
-        <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="relative w-full"> {/* paddingBottom: '75%' を削除 */}
+        <div className="overflow-auto"> {/* absoluteとinset-0を削除し、スクロール可能に */}
+          {/* タンクのヘッダー部分 - 元の水槽タイトルとレベル表示を復元 */}
           <div className="pixel-container p-4 bg-stone-600">
-            <div className="flex justify-between items-center mb-4 border-b border-gray-300 pb-2">
-              <div className="flex items-center">
-                <h2 className="pixel-text text-xl text-white font-bold">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b border-gray-300 pb-2">
+              <div className="flex items-center mb-2 sm:mb-0">
+                <h2 className="pixel-text text-xl text-white font-bold truncate max-w-[200px] sm:max-w-none">
                   {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}'s Water Tank`}
                   {isLocalMode && <span className="text-xs ml-2 text-gray-600">(Local Mode)</span>}
                 </h2>
@@ -768,8 +747,8 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
               </div>
 
               {walletAddress && (
-                <div className="flex items-center">
-                  <div className="bg-gray-200 border-2 border-black p-1 flex items-center">
+                <div className="flex items-center w-full sm:w-auto">
+                  <div className="bg-gray-200 border-2 border-black p-1 flex items-center flex-wrap sm:flex-nowrap w-full sm:w-auto">
                     <div className="pixel-text text-xs mr-2">Rank {tankRank}</div>
                     <div className="w-24 h-4 bg-gray-300 border border-black">
                       <div className="h-full bg-blue-500" style={{ width: `${progressToNextRank}%` }}></div>
@@ -784,15 +763,16 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                         <span className="text-xs">Upgrade</span>
                       </button>
                     ) : (
-                      <div className="ml-2 text-xs">{txToNextRank} more for next rank</div>
+                      <div className="ml-2 text-xs whitespace-nowrap">{txToNextRank} more for next rank</div>
                     )}
                   </div>
                 </div>
               )}
             </div>
 
+            {/* タンクの内容部分 */}
             <div
-              className="fish-tank w-full h-[480px] relative rank-${tankRank}"
+              className="fish-tank w-full h-[480px] relative rank-${tankRank} rounded-lg border-4 border-stone-400 shadow-lg overflow-hidden"
               style={{
                 backgroundImage: tankBackground ? `url(${tankBackground})` : undefined,
                 backgroundSize: 'cover',
@@ -952,8 +932,8 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
             )}
           </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   )
 }
 

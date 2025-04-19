@@ -25,12 +25,14 @@ export default function Layout({
     <div className="flex flex-col min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('https://game-materials.com/wp-content/uploads/2024/07/treasure-submarine3-1024x576.jpg')"}}>
       <Header onWalletSearch={onWalletSearch} />
 
-      <main className="flex-1 p-4">{children}</main>
+      <main className="flex-1 p-4 flex flex-col items-center justify-center">
+        {children}
+      </main>
 
-      <div className="relative">
+      <div className="relative flex justify-center md:block">
         {account?.address && (
           <button 
-            className="absolute bottom-20 left-4 flex items-center justify-center bg-transparent border-none hover:bg-transparent focus:outline-none" 
+            className="md:absolute md:bottom-20 md:left-4 mt-4 md:mt-0 flex items-center justify-center bg-transparent border-none hover:bg-transparent focus:outline-none" 
             onClick={() => setIsMyBoxOpen(true)}
             style={{
               padding: 0,
