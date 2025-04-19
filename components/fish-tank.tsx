@@ -36,6 +36,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isLocalMode, setIsLocalMode] = useState(false)
+  const [tankExists, setTankExists] = useState<boolean | null>(null)
 
   // Extract fetchWaterTankSBT to a reusable function
   const fetchWaterTankSBT = useCallback(async () => {
@@ -49,10 +50,18 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       setTxCount(0)
       setCanUpgrade(false)
       setIsLocalMode(true)
+      setTankExists(false)
       return
     }
 
     try {
+      // Validate Sui address format
+      if (!walletAddress.startsWith('0x') || walletAddress.length !== 66) {
+        window.alert("Invalid Sui address format. Please check the address and try again.");
+        setTankExists(false)
+        return
+      }
+      
       setIsRefreshing(true)
       
       // Get WaterTank object
@@ -67,6 +76,15 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         }
       })
 
+      // Check if any Water Tank exists
+      if (objects.data.length === 0) {
+        // No Tank found for this address
+        setTankExists(false)
+        return
+      }
+      
+      setTankExists(true)
+      
       // Find WaterTank object
       const waterTank = objects.data.find(obj => {
         const type = obj.data?.type as string
@@ -200,17 +218,19 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         setIsLocalMode(true)
       }
     } catch (error) {
-      console.error("Error fetching WaterTank:", error)
-      toast({
-        title: "Error",
-        description: "Failed to retrieve the water tank SBT",
-        variant: "destructive",
-      })
-      setIsLocalMode(true)
+      console.error("Error fetching Water Tank:", error);
+      
+      // エラーメッセージをウィンドウに表示
+      if (error instanceof Error && error.message.includes("Invalid Sui address")) {
+        window.alert("Invalid Sui address. Please check the address and try again.");
+      } else {
+        window.alert("Error loading the Water Tank. Please try again later.");
+      }
+      setTankExists(false)
     } finally {
       setIsRefreshing(false)
     }
-  }, [walletAddress, suiClient, toast])
+  }, [walletAddress, suiClient])
 
   // Load tank data on component mount or wallet change
   useEffect(() => {
@@ -669,6 +689,40 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   // Calculate progress to next rank
   const progressToNextRank = Math.min(100, ((txCount % 10) / 10) * 100)
   const txToNextRank = 10 - (txCount % 10)
+
+  // If wallet is not connected and no wallet address is specified
+  if (!currentAccount && !walletAddress) {
+    return (
+      <div className="game-container flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="pixel-text text-3xl text-white">Connect Wallet !!</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If we know the tank doesn't exist
+  if (tankExists === false) {
+    return (
+      <div className="game-container flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="pixel-text text-3xl text-white font-bold">No Water Tank Found for this Address...</p>
+          <p className="pixel-text text-xl text-white mt-4 font-bold">Look for Tank at a different address.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Loading state
+  if (tankExists === null && walletAddress) {
+    return (
+      <div className="game-container flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="pixel-text text-3xl text-white">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
