@@ -36,6 +36,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isLocalMode, setIsLocalMode] = useState(false)
+  const [tankExists, setTankExists] = useState<boolean | null>(null)
 
   // Extract fetchWaterTankSBT to a reusable function
   const fetchWaterTankSBT = useCallback(async () => {
@@ -49,15 +50,16 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       setTxCount(0)
       setCanUpgrade(false)
       setIsLocalMode(true)
+      setTankExists(false)
       return
     }
 
     try {
-      // Validate Sui address format (簡易的なバリデーション)
+      // Validate Sui address format
       if (!walletAddress.startsWith('0x') || walletAddress.length !== 66) {
-        // Invalid address format - show alert window
         window.alert("Invalid Sui address format. Please check the address and try again.");
-        return;
+        setTankExists(false)
+        return
       }
       
       setIsRefreshing(true)
@@ -74,6 +76,15 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         }
       })
 
+      // Check if any Water Tank exists
+      if (objects.data.length === 0) {
+        // No Tank found for this address
+        setTankExists(false)
+        return
+      }
+      
+      setTankExists(true)
+      
       // Find WaterTank object
       const waterTank = objects.data.find(obj => {
         const type = obj.data?.type as string
@@ -215,7 +226,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       } else {
         window.alert("Error loading the Water Tank. Please try again later.");
       }
-      setIsLocalMode(true)
+      setTankExists(false)
     } finally {
       setIsRefreshing(false)
     }
@@ -678,6 +689,40 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   // Calculate progress to next rank
   const progressToNextRank = Math.min(100, ((txCount % 10) / 10) * 100)
   const txToNextRank = 10 - (txCount % 10)
+
+  // If wallet is not connected and no wallet address is specified
+  if (!currentAccount && !walletAddress) {
+    return (
+      <div className="game-container flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="pixel-text text-3xl text-white">Connect Wallet !!</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If we know the tank doesn't exist
+  if (tankExists === false) {
+    return (
+      <div className="game-container flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="pixel-text text-3xl text-white font-bold">No Water Tank Found for this Address...</p>
+          <p className="pixel-text text-xl text-white mt-4 font-bold">Look for Tank at a different address.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Loading state
+  if (tankExists === null && walletAddress) {
+    return (
+      <div className="game-container flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="pixel-text text-3xl text-white">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
