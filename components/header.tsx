@@ -6,9 +6,11 @@ import { ChevronDown } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { ConnectButton, useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit"
-// ※ SDK 1.0 では Transaction クラスは @mysten/sui からのインポートも検討してくださいが、参考資料に合わせる場合は下記のように記述します
 import { Transaction } from '@mysten/sui/transactions'
 import { bcs } from '@mysten/sui/bcs'
+import { SuiClient } from '@mysten/sui/client'
+import { SuinsClient } from '@mysten/suins';
+import { getFullnodeUrl } from '@mysten/sui/client';
 
 interface HeaderProps {
   onWalletSearch: (address: string) => void
@@ -30,9 +32,34 @@ export default function Header({ onWalletSearch }: HeaderProps) {
   const suiClient = useSuiClient()
   const signTransaction = useSignTransaction()
 
-  const handleSearch = (e: React.FormEvent) => {
+  const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+
+  const suinsClient = new SuinsClient({
+    client,
+    network: 'testnet',
+  });
+
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
-    onWalletSearch(walletInput)
+    
+    try {
+      let searchAddress = walletInput
+      
+      // 入力が.suiで終わる場合、SuiNS名として解決を試みる
+      if (walletInput.toLowerCase().endsWith('.sui')) {
+        const nameRecord = await suinsClient.getNameRecord(walletInput)
+        if (nameRecord?.targetAddress) {
+          searchAddress = nameRecord.targetAddress
+        }
+      }
+      
+      // 解決したアドレスで検索を実行
+      onWalletSearch(searchAddress)
+    } catch (error) {
+      console.error('Error resolving SuiNS name:', error)
+      // エラーの場合は元の入力値で検索
+      onWalletSearch(walletInput)
+    }
   }
 
   // アカウント変更時にTankの有無をチェック
@@ -89,11 +116,10 @@ export default function Header({ onWalletSearch }: HeaderProps) {
         ],
       })
       
-      // ④ トランザクションバイト列をビルド（RPC 経由で入力値の解決が必要な場合）
-      await tx.build({ client: suiClient })
-      
-      // ⑤ 署名（useSignTransaction の mutateAsync を利用）
-      const { bytes, signature } = await signTransaction.mutateAsync({ transaction: tx })
+      // 署名
+      const { bytes, signature } = await signTransaction.mutateAsync({
+        transaction: tx as any,
+      })
       
       // ⑥ トランザクションの実行
       const result = await suiClient.executeTransactionBlock({

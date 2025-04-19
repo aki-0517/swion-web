@@ -53,6 +53,13 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
     }
 
     try {
+      // Validate Sui address format (簡易的なバリデーション)
+      if (!walletAddress.startsWith('0x') || walletAddress.length !== 66) {
+        // Invalid address format - show alert window
+        window.alert("Invalid Sui address format. Please check the address and try again.");
+        return;
+      }
+      
       setIsRefreshing(true)
       
       // Get WaterTank object
@@ -200,17 +207,19 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         setIsLocalMode(true)
       }
     } catch (error) {
-      console.error("Error fetching WaterTank:", error)
-      toast({
-        title: "Error",
-        description: "Failed to retrieve the water tank SBT",
-        variant: "destructive",
-      })
+      console.error("Error fetching Water Tank:", error);
+      
+      // エラーメッセージをウィンドウに表示
+      if (error instanceof Error && error.message.includes("Invalid Sui address")) {
+        window.alert("Invalid Sui address. Please check the address and try again.");
+      } else {
+        window.alert("Error loading the Water Tank. Please try again later.");
+      }
       setIsLocalMode(true)
     } finally {
       setIsRefreshing(false)
     }
-  }, [walletAddress, suiClient, toast])
+  }, [walletAddress, suiClient])
 
   // Load tank data on component mount or wallet change
   useEffect(() => {
