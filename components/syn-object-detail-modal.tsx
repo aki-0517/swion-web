@@ -5,6 +5,16 @@ import Image from "next/image"
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from "@mysten/dapp-kit"
 import { Transaction } from "@mysten/sui/transactions"
 import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabaseClient"
+
+interface Project {
+  id: number
+  name: string
+  description: string
+  logo_image: string | null
+  url: string | null
+}
 
 interface SynObject {
   id: string
@@ -28,6 +38,32 @@ export default function SynObjectDetailModal({ synObject, onClose }: SynObjectDe
   const suiClient = useSuiClient()
   const { toast } = useToast()
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
+  const [project, setProject] = useState<Project | null>(null)
+
+  useEffect(() => {
+    async function fetchProjectData() {
+      if (!synObject.id) return
+
+      const { data: projectData, error: projectError } = await supabase
+        .from('projects')
+        .select('id, name, description, logo_image, url')
+        .eq('id', synObject.id)
+        .single()
+
+      if (projectError) {
+        toast({
+          title: "エラー",
+          description: "プロジェクト情報の読み込みに失敗しました",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setProject(projectData)
+    }
+
+    fetchProjectData()
+  }, [synObject.id, toast])
 
   const handlePurchase = async () => {
     if (!account?.address) {
@@ -76,13 +112,26 @@ export default function SynObjectDetailModal({ synObject, onClose }: SynObjectDe
         <div className="mt-4">
           <div className="w-full aspect-square bg-blue-100 border-2 border-black mb-4 relative">
             {synObject.image && (
-              <Image
-                src={synObject.image}
-                alt={`SynObject ${synObject.id}`}
-                fill
-                className="object-contain p-4"
-                sizes="(max-width: 425px) 100vw"
-              />
+              <>
+                <Image
+                  src={synObject.image}
+                  alt={`SynObject ${synObject.id}`}
+                  fill
+                  className="object-contain p-4"
+                  sizes="(max-width: 425px) 100vw"
+                />
+                {project?.logo_image && typeof project.logo_image === 'string' && (
+                  <div className="absolute top-2 right-2 w-12 h-12 bg-white rounded-full border-2 border-black overflow-hidden">
+                    <Image
+                      src={project.logo_image}
+                      alt={`${project?.name || 'Project'} logo`}
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
 

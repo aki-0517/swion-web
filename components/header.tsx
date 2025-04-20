@@ -42,10 +42,10 @@ export default function Header({ onWalletSearch }: HeaderProps) {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     try {
       let searchAddress = walletInput
-      
+
       // 入力が.suiで終わる場合、SuiNS名として解決を試みる
       if (walletInput.toLowerCase().endsWith('.sui')) {
         const nameRecord = await suinsClient.getNameRecord(walletInput)
@@ -53,7 +53,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
           searchAddress = nameRecord.targetAddress
         }
       }
-      
+
       // 解決したアドレスで検索を実行
       onWalletSearch(searchAddress)
     } catch (error) {
@@ -96,16 +96,16 @@ export default function Header({ onWalletSearch }: HeaderProps) {
 
     try {
       setIsMinting(true)
-      
+
       // ① トランザクションの作成
       const tx = new Transaction()
-      
+
       // （必要に応じて）送信元を明示的に設定
       tx.setSender(account.address)
-      
+
       // ② 背景画像の URL を UTF-8 バイト配列に変換
       const backgroundBytes = new Uint8Array(new TextEncoder().encode(DEFAULT_BACKGROUND))
-      
+
       // ③ initialize_tank 関数の呼び出しを追加
       tx.moveCall({
         target: `${PACKAGE_ID}::${NFT_SYSTEM_MODULE}::initialize_tank`,
@@ -116,22 +116,22 @@ export default function Header({ onWalletSearch }: HeaderProps) {
           tx.pure.u64(BigInt(DEFAULT_LEVEL)),
         ],
       })
-      
+
       // 署名
       const { bytes, signature } = await signTransaction.mutateAsync({
         transaction: tx as any,
       })
-      
+
       // ⑥ トランザクションの実行
       const result = await suiClient.executeTransactionBlock({
         transactionBlock: bytes,
         signature,
         options: { showEffects: true, showEvents: true },
       })
-      
+
       // ⑦ トランザクションの完了を待つ（以降の RPC 呼び出しで効果が反映されることを保証）
       await suiClient.waitForTransaction({ digest: result.digest })
-      
+
       console.log("Tank minted successfully:", result)
       setHasTank(true)
       setIsMinting(false)
@@ -152,8 +152,8 @@ export default function Header({ onWalletSearch }: HeaderProps) {
 
     if (hasTank === false) {
       return (
-        <button 
-          className="pixel-button px-3 py-1 ml-4 bg-green-500 hover:bg-green-600 text-white" 
+        <button
+          className="pixel-button px-3 py-1 ml-4 bg-green-500 hover:bg-green-600 text-white"
           onClick={mintNewTank}
           disabled={isMinting}
         >
@@ -170,7 +170,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
       <div className="container mx-auto px-4 h-14 flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <Link href="/" className="pixel-text text-xl text-white font-bold">
-            Swion
+            <img src="/seionlogo.jpg" alt="Swion" className="h-10 rounded-lg" />
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/explore" className="pixel-text text-xl text-white font-bold text-shadow-md">
@@ -180,9 +180,9 @@ export default function Header({ onWalletSearch }: HeaderProps) {
               Collections
             </Link>
           </nav>
-          
+
           {/* モバイルメニューボタン */}
-          <button 
+          <button
             className="md:hidden text-white"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -233,31 +233,31 @@ export default function Header({ onWalletSearch }: HeaderProps) {
           )}
         </div>
       </div>
-      
+
       {/* モバイルメニュー */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-50 bg-stone-800 bg-opacity-95 flex flex-col">
           <div className="p-4 flex justify-between items-center">
-            <Link href="/" className="pixel-text text-xl text-white font-bold">
-              Swion
+            <Link href="/" className="pixel-text text-xl text-white font-boldg">
+              <img src="/seionlogo.jpg" alt="Swion" className="h-10 rounded-lg" />
             </Link>
-            <button 
-              className="text-white" 
+            <button
+              className="text-white"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <X size={24} />
             </button>
           </div>
           <div className="flex-1 flex flex-col p-4 space-y-6">
-            <Link 
-              href="/explore" 
+            <Link
+              href="/explore"
               className="pixel-text text-xl text-white font-bold text-shadow-md"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Explore
             </Link>
-            <Link 
-              href="/collections" 
+            <Link
+              href="/collections"
               className="pixel-text text-xl text-white font-bold text-shadow-md"
               onClick={() => setIsMobileMenuOpen(false)}
             >

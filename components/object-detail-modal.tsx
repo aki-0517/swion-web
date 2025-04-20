@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabaseClient"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrentAccount, useSignTransaction, useSuiClient } from "@mysten/dapp-kit"
 import { Transaction } from "@mysten/sui/transactions"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface MintFlag {
   module: string
@@ -24,6 +24,14 @@ interface NFTObject {
   project_id: number
 }
 
+interface Project {
+  id: number
+  name: string
+  description: string
+  logo_image: string | null
+  url: string | null
+}
+
 interface ObjectDetailModalProps {
   object: NFTObject
   onClose: () => void
@@ -35,6 +43,7 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
   const signTransaction = useSignTransaction()
   const suiClient = useSuiClient()
   const [isLoading, setIsLoading] = useState(false)
+  const [project, setProject] = useState<Project | null>(null)
 
   const formatMintFlag = (mintFlag: MintFlag) => {
     return `${mintFlag.package}::${mintFlag.module}::${mintFlag.function}`
@@ -44,6 +53,31 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
   const getImageUrl = () => {
     return object.image
   }
+
+  useEffect(() => {
+    async function fetchProjectData() {
+      if (!object.project_id) return
+
+      const { data: projectData, error: projectError } = await supabase
+        .from('projects')
+        .select('id, name, description, logo_image, url')
+        .eq('id', object.project_id)
+        .single()
+
+      if (projectError) {
+        toast({
+          title: "エラー",
+          description: "プロジェクト情報の読み込みに失敗しました",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setProject(projectData)
+    }
+
+    fetchProjectData()
+  }, [object.project_id, toast])
 
   const handleMint = async () => {
     setIsLoading(true)
@@ -118,13 +152,26 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
         <div className="mt-4">
           <div className="w-full aspect-square bg-blue-200 border-2 border-black mb-4 relative">
             {object.image && (
-              <Image
-                src={getImageUrl() || ''}
-                alt={object.name}
-                fill
-                className="object-contain p-4"
-                sizes="(max-width: 425px) 100vw"
-              />
+              <>
+                <Image
+                  src={getImageUrl() || ''}
+                  alt={object.name}
+                  fill
+                  className="object-contain p-4"
+                  sizes="(max-width: 425px) 100vw"
+                />
+                {project?.logo_image && typeof project.logo_image === 'string' && (
+                  <div className="absolute top-2 right-2 w-12 h-12 bg-white rounded-full border-2 border-black overflow-hidden">
+                    <Image
+                      src={project.logo_image}
+                      alt={`${project?.name || 'Project'} logo`}
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
 
