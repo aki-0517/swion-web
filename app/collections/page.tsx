@@ -70,7 +70,7 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed" style={{ backgroundImage: 'url("https://assets.clip-studio.com/ja-jp/description/2121290/img/5e915724e0-bd4e-32af-53ad-05fcb416b2.jpg")' }}>
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed" style={{ backgroundImage: 'url("https://embed.pixiv.net/artwork.php?illust_id=116659447&mdate=1709654598")' }}>
       <Header 
         onWalletSearch={(address: string) => {
           console.log("Searching wallet:", address)

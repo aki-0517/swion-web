@@ -173,10 +173,10 @@ export default function Header({ onWalletSearch }: HeaderProps) {
             <img src="/seionlogo.jpg" alt="Swion" className="h-10 rounded-lg" />
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/explore" className="pixel-text text-xl text-white font-bold text-shadow-md">
+            <Link href="/explore" className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
               Explore
             </Link>
-            <Link href="/collections" className="pixel-text text-xl text-white font-bold text-shadow-md">
+            <Link href="/collections" className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
               Collections
             </Link>
           </nav>
@@ -251,14 +251,14 @@ export default function Header({ onWalletSearch }: HeaderProps) {
           <div className="flex-1 flex flex-col p-4 space-y-6">
             <Link
               href="/explore"
-              className="pixel-text text-xl text-white font-bold text-shadow-md"
+              className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Explore
             </Link>
             <Link
               href="/collections"
-              className="pixel-text text-xl text-white font-bold text-shadow-md"
+              className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Collections

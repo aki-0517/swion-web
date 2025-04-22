@@ -22,7 +22,7 @@ export default function Layout({
   const account = useCurrentAccount()
 
   return (
-    <div className="flex flex-col min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('https://game-materials.com/wp-content/uploads/2024/07/treasure-submarine3-1024x576.jpg')"}}>
+    <div className="flex flex-col min-h-screen bg-cover bg-center bg-fixed" style={{ backgroundImage: "url('https://embed.pixiv.net/artwork.php?illust_id=116659447&mdate=1709654598')"}}>
       <Header onWalletSearch={onWalletSearch} />
 
       <main className="flex-1 p-4 flex flex-col items-center justify-center">
