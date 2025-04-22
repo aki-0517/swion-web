@@ -37,6 +37,34 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isLocalMode, setIsLocalMode] = useState(false)
   const [tankExists, setTankExists] = useState<boolean | null>(null)
+  
+  // ローディングのための新しい状態変数を追加
+  const [isContentLoading, setIsContentLoading] = useState(true)
+  const [isInitialAnimation, setIsInitialAnimation] = useState(true)
+  // アニメーション用の背景画像切り替え
+  const [loadingBgIndex, setLoadingBgIndex] = useState(0)
+  
+  // ローディング背景画像の配列
+  const loadingBackgrounds = [
+    "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//B7340C30-8347-4203-9219-9252435BB412.PNG",
+    "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//DB8829AA-F5CF-4EDA-922E-3C628C5AB593.PNG",
+    "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//ChatGPT%20Image%20Apr%205,%202025,%2001_31_08%20PM.png"
+  ]
+
+  // 背景アニメーション用のエフェクト
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout
+    
+    if (isContentLoading) {
+      intervalId = setInterval(() => {
+        setLoadingBgIndex(prev => (prev + 1) % loadingBackgrounds.length)
+      }, 400) // 0.4秒ごとに切り替え
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [isContentLoading])
 
   // Extract fetchWaterTankSBT to a reusable function
   const fetchWaterTankSBT = useCallback(async () => {
@@ -51,18 +79,21 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       setCanUpgrade(false)
       setIsLocalMode(true)
       setTankExists(false)
+      setIsContentLoading(false)
       return
     }
 
     try {
       // Validate Sui address format
       if (!walletAddress.startsWith('0x') || walletAddress.length !== 66) {
-        window.alert("Invalid Sui address format. Please check the address and try again.");
+        window.alert("Invalid Sui address format. Please check the address and try again.")
         setTankExists(false)
+        setIsContentLoading(false)
         return
       }
       
       setIsRefreshing(true)
+      setIsContentLoading(true)
       
       // Get WaterTank object
       const objects = await suiClient.getOwnedObjects({
@@ -80,6 +111,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       if (objects.data.length === 0) {
         // No Tank found for this address
         setTankExists(false)
+        setIsContentLoading(false)
         return
       }
       
@@ -93,16 +125,16 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
 
       if (waterTank) {
         interface WaterTankFields {
-          background_image: string;
-          child_objects: string[];
-          level: number;
+          background_image: string
+          child_objects: string[]
+          level: number
         }
 
         interface NFTFields {
-          name: string;
-          image: string;
-          position_x: number;
-          position_y: number;
+          name: string
+          image: string
+          position_x: number
+          position_y: number
         }
 
         const content = waterTank.data?.content as unknown as { fields: WaterTankFields }
@@ -125,12 +157,12 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         console.log("Tank child objects:", childObjects)
         
         const nftObjects: Array<{
-          id: string;
-          type: string;
-          name: string;
-          image: string;
-          x: number;
-          y: number;
+          id: string
+          type: string
+          name: string
+          image: string
+          x: number
+          y: number
         }> = []
         const positions: { [key: string]: { x: number; y: number } } = {}
 
@@ -158,13 +190,13 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
               }
 
               // NFTの型情報を取得してSynObjectかどうか判断
-              const objectType = nftObject.data.type as string;
-              const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID ?? "";
-              const expectedSynType = `${packageId}::nft_system::SynObject`;
+              const objectType = nftObject.data.type as string
+              const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID ?? ""
+              const expectedSynType = `${packageId}::nft_system::SynObject`
               
               // オブジェクトの型に応じて処理を分ける
               if (objectType === expectedSynType) {
-                console.log(`SynObject ${nftId} position:`, nftFields.position_x, nftFields.position_y);
+                console.log(`SynObject ${nftId} position:`, nftFields.position_x, nftFields.position_y)
                 
                 const synObj = {
                   id: nftId,
@@ -175,14 +207,14 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                   y: nftFields.position_y || 50
                 }
                 
-                nftObjects.push(synObj);
+                nftObjects.push(synObj)
                 positions[nftId] = {
                   x: nftFields.position_x || 50,
                   y: nftFields.position_y || 50
-                };
+                }
               } else {
                 // 通常のNFTオブジェクトとして処理
-                console.log(`NFT ${nftId} position:`, nftFields.position_x, nftFields.position_y);
+                console.log(`NFT ${nftId} position:`, nftFields.position_x, nftFields.position_y)
 
               const nft = {
                 id: nftId,
@@ -193,16 +225,16 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                 y: nftFields.position_y || 50
               }
 
-                nftObjects.push(nft);
+                nftObjects.push(nft)
               positions[nftId] = {
                 x: nftFields.position_x || 50,
                 y: nftFields.position_y || 50
-                };
+                }
               }
             }
           } catch (error) {
-            console.error(`Error fetching object ${nftId}:`, error);
-}
+            console.error(`Error fetching object ${nftId}:`, error)
+          }
         }
 
         setObjects(nftObjects)
@@ -211,26 +243,35 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         // Reset hasChanges after loading
         setHasChanges(false)
         
-        // ローカルモード判定
+        // アニメーションのため2秒待機する
+        if (isInitialAnimation) {
+          // 最初のロード時のみ2秒待機
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          setIsInitialAnimation(false)
+        }
+        
         setIsLocalMode(false) // デフォルトはブロックチェーンモード
+        setIsContentLoading(false)
       } else {
         console.log("WaterTank object not found, switching to local mode")
         setIsLocalMode(true)
+        setIsContentLoading(false)
       }
     } catch (error) {
-      console.error("Error fetching Water Tank:", error);
+      console.error("Error fetching Water Tank:", error)
       
       // エラーメッセージをウィンドウに表示
       if (error instanceof Error && error.message.includes("Invalid Sui address")) {
-        window.alert("Invalid Sui address. Please check the address and try again.");
+        window.alert("Invalid Sui address. Please check the address and try again.")
       } else {
-        window.alert("Error loading the Water Tank. Please try again later.");
+        window.alert("Error loading the Water Tank. Please try again later.")
       }
       setTankExists(false)
+      setIsContentLoading(false)
     } finally {
       setIsRefreshing(false)
     }
-  }, [walletAddress, suiClient])
+  }, [walletAddress, suiClient, isInitialAnimation])
 
   // Load tank data on component mount or wallet change
   useEffect(() => {
@@ -362,52 +403,52 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       for (const obj of objects) {
         // Skip local objects (those without a valid Sui Object ID format)
         if (!isValidSuiObjectId(obj.id)) {
-          console.log(`Skipping local object: ${obj.id}`);
-          continue;
+          console.log(`Skipping local object: ${obj.id}`)
+          continue
         }
 
         try {
           const objectDetails = await suiClient.getObject({
             id: obj.id,
             options: { showOwner: true, showType: true }
-          });
+          })
 
           if (!objectDetails.data) {
-             console.warn(`Could not fetch details for object ${obj.id}. Skipping.`);
-             continue;
+             console.warn(`Could not fetch details for object ${obj.id}. Skipping.`)
+             continue
           }
 
           const ownerAddress = objectDetails.data.owner 
             ? (typeof objectDetails.data.owner === 'object' && 'AddressOwner' in objectDetails.data.owner 
                ? objectDetails.data.owner.AddressOwner 
                : null)
-            : null;
-          const objectType = objectDetails.data.type;
+            : null
+          const objectType = objectDetails.data.type
 
           if (ownerAddress !== currentAccount.address) {
-            console.warn(`Object ${obj.id} is not owned by the current wallet (${currentAccount.address}). Owner: ${ownerAddress}. Skipping.`);
+            console.warn(`Object ${obj.id} is not owned by the current wallet (${currentAccount.address}). Owner: ${ownerAddress}. Skipping.`)
             toast({
               title: "Ownership Error",
               description: `Cannot save object ${obj.id.substring(0, 8)}... as it's not owned by you.`,
               variant: "destructive",
             })
-            continue;
+            continue
           }
 
           // Check if the object type includes NFTObject or SynObject from the correct package
-          const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID;
-          const expectedNftType = `${packageId}::nft_system::NFTObject`;
-          const expectedSynType = `${packageId}::nft_system::SynObject`;
+          const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID
+          const expectedNftType = `${packageId}::nft_system::NFTObject`
+          const expectedSynType = `${packageId}::nft_system::SynObject`
 
           if (objectType === expectedNftType) {
-            const position = objectPositions[obj.id] || { x: obj.x, y: obj.y };
-            objectsToProcess.push({ id: obj.id, type: "nft", position: { x: Math.floor(position.x), y: Math.floor(position.y) } });
-            console.log(`Verified NFTObject: ${obj.id}`);
+            const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
+            objectsToProcess.push({ id: obj.id, type: "nft", position: { x: Math.floor(position.x), y: Math.floor(position.y) } })
+            console.log(`Verified NFTObject: ${obj.id}`)
           } else if (objectType === expectedSynType) {
-            objectsToProcess.push({ id: obj.id, type: "synObject" });
-            console.log(`Verified SynObject: ${obj.id}`);
+            objectsToProcess.push({ id: obj.id, type: "synObject" })
+            console.log(`Verified SynObject: ${obj.id}`)
           } else {
-            console.warn(`Object ${obj.id} has an unexpected type: ${objectType}. Skipping.`);
+            console.warn(`Object ${obj.id} has an unexpected type: ${objectType}. Skipping.`)
              toast({
               title: "Type Error",
               description: `Object ${obj.id.substring(0,8)}... has an unexpected type.`,
@@ -416,7 +457,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           }
 
         } catch (error) {
-           console.error(`Error fetching details for object ${obj.id}:`, error);
+           console.error(`Error fetching details for object ${obj.id}:`, error)
            toast({
              title: "Verification Error",
              description: `Failed to verify object ${obj.id.substring(0,8)}...`,
@@ -425,7 +466,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         }
       }
 
-      console.log(`Verified ${objectsToProcess.length} objects to process.`);
+      console.log(`Verified ${objectsToProcess.length} objects to process.`)
 
       if (objectsToProcess.length === 0) {
         toast({
@@ -435,17 +476,17 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
         })
         setIsLoading(false)
         // ローカルモードではないが、保存対象がない場合はローカル保存と同様の動作（hasChangesをfalseにするなど）
-        setHasChanges(false);
-        return;
+        setHasChanges(false)
+        return
       }
 
 
       // 2. Add move calls to the transaction
-      let transactionHasCalls = false;
+      let transactionHasCalls = false
       for (const objToProcess of objectsToProcess) {
         try {
           if (objToProcess.type === "nft" && objToProcess.position) {
-            console.log(`Adding calls for NFT: ${objToProcess.id}, Position: x=${objToProcess.position.x}, y=${objToProcess.position.y}`);
+            console.log(`Adding calls for NFT: ${objToProcess.id}, Position: x=${objToProcess.position.x}, y=${objToProcess.position.y}`)
             // Attach NFT
             tx.moveCall({
               target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::attach_object`,
@@ -453,7 +494,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                 tx.object(tankId),
                 tx.object(objToProcess.id),
               ],
-            });
+            })
             // Save Layout for NFT
             tx.moveCall({
               target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::save_layout`,
@@ -463,12 +504,12 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                 tx.pure.u64(objToProcess.position.x),
                 tx.pure.u64(objToProcess.position.y),
               ],
-            });
-            transactionHasCalls = true;
+            })
+            transactionHasCalls = true
           } else if (objToProcess.type === "synObject") {
             // SynObjectの場合の位置情報も取得
-            const position = objectPositions[objToProcess.id] || { x: 0, y: 0 };
-            console.log(`Adding call for SynObject: ${objToProcess.id}, Position: x=${Math.floor(position.x)}, y=${Math.floor(position.y)}`);
+            const position = objectPositions[objToProcess.id] || { x: 0, y: 0 }
+            console.log(`Adding call for SynObject: ${objToProcess.id}, Position: x=${Math.floor(position.x)}, y=${Math.floor(position.y)}`)
             
             // まずSynObjectをタンクに添付
             tx.moveCall({
@@ -477,7 +518,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                 tx.object(tankId),
                 tx.object(objToProcess.id),
               ],
-            });
+            })
             
             // 次にSynObjectの位置情報を更新
             tx.moveCall({
@@ -488,12 +529,12 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                 tx.pure.u64(Math.floor(position.x)),
                 tx.pure.u64(Math.floor(position.y)),
               ],
-            });
+            })
             
-            transactionHasCalls = true;
+            transactionHasCalls = true
           }
         } catch (error) {
-           console.error(`Error preparing transaction for object ${objToProcess.id}:`, error);
+           console.error(`Error preparing transaction for object ${objToProcess.id}:`, error)
            toast({
              title: "Transaction Error",
              description: `Failed to prepare transaction for object ${objToProcess.id.substring(0,8)}...`,
@@ -508,77 +549,77 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           description: "No valid operations to perform.",
           variant: "default",
         })
-        setIsLoading(false);
-        setHasChanges(false); // Reset changes if nothing was added to tx
-        return;
+        setIsLoading(false)
+        setHasChanges(false) // Reset changes if nothing was added to tx
+        return
       }
 
 
       // 3. Build and Execute Transaction
       console.log("Building transaction...")
       // Build the transaction (this performs the dry run)
-      await tx.build({ client: suiClient }); // Pass the suiClient instance here
+      await tx.build({ client: suiClient }) // Pass the suiClient instance here
 
-      console.log("Transaction built successfully. Ready to sign and execute.");
+      console.log("Transaction built successfully. Ready to sign and execute.")
 
       // Execute the transaction
       const result = await signAndExecute({
         transaction: tx,
-      });
+      })
 
-      console.log("Transaction result:", result);
+      console.log("Transaction result:", result)
 
 
       toast({
         title: "Save Complete",
         description: "Water tank layout has been saved successfully",
-      });
+      })
 
-      setHasChanges(false);
+      setHasChanges(false)
 
       // レイアウト保存が完了したら、トランザクション数を増やし、ランクアップ判定
       setTxCount(prev => {
-        const newCount = prev + 1;
+        const newCount = prev + 1
         // 10トランザクションごとにアップグレード可能に
         if (newCount % 10 === 0) {
-          setCanUpgrade(true);
+          setCanUpgrade(true)
           toast({
             title: "Upgrade Available!",
             description: "You can now upgrade your water tank to the next level!",
-          });
+          })
         }
-        return newCount;
-      });
+        return newCount
+      })
 
       // Refresh the tank data to show the updated child_objects
-      await fetchWaterTankSBT();
+      await fetchWaterTankSBT()
 
     } catch (error) {
-      console.error("Layout save error:", error);
+      console.error("Layout save error:", error)
       // エラーメッセージをより具体的に表示
-      let description = "Failed to save water tank layout.";
+      let description = "Failed to save water tank layout."
        if (error instanceof Error) {
         if (error.message.includes("CommandArgumentError")) {
-          description += " There might be an issue with object types or ownership.";
+          description += " There might be an issue with object types or ownership."
         } else if (error.message.includes("InsufficientGas")) {
-          description += " Insufficient gas budget for the transaction.";
+          description += " Insufficient gas budget for the transaction."
         } else {
-           description += ` ${error.message}`;
+           description += ` ${error.message}`
         }
       } else {
-        description += ` ${String(error)}`;
+        description += ` ${String(error)}`
       }
 
       toast({
         title: "Error",
         description: description,
         variant: "destructive",
-      });
+      })
 
       // オンチェーン保存に失敗した場合でもローカル保存はしない方が混乱を招かないかも
       // handleLocalSave()
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
@@ -698,7 +739,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           <p className="pixel-text text-3xl text-white">Connect Wallet !!</p>
         </div>
       </div>
-    );
+    )
   }
   
   // If we know the tank doesn't exist
@@ -710,7 +751,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           <p className="pixel-text text-xl text-white mt-4 font-bold">Look for Tank at a different address.</p>
         </div>
       </div>
-    );
+    )
   }
   
   // Loading state
@@ -721,14 +762,13 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           <p className="pixel-text text-3xl text-white">Loading...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <div className="relative w-full"> {/* paddingBottom: '75%' を削除 */}
-        <div className="overflow-auto"> {/* absoluteとinset-0を削除し、スクロール可能に */}
-          {/* タンクのヘッダー部分 - 元の水槽タイトルとレベル表示を復元 */}
+      <div className="relative w-full">
+        <div className="overflow-auto">
           <div className="pixel-container p-4 bg-stone-600">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b border-gray-300 pb-2">
               <div className="flex items-center mb-2 sm:mb-0">
@@ -770,147 +810,170 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
               )}
             </div>
 
-            {/* タンクの内容部分 */}
+            {/* タンクの内容部分 - 枠だけを表示するように変更 */}
             <div
               className="fish-tank w-full h-[480px] relative rank-${tankRank} rounded-lg border-4 border-stone-400 shadow-lg overflow-hidden"
               style={{
-                backgroundImage: tankBackground ? `url(${tankBackground})` : undefined,
+                backgroundImage: !isContentLoading && tankBackground ? `url(${tankBackground})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
               }}
             >
-              {!tankBackground && (
+              {/* コンテンツのローディング表示 */}
+              {isContentLoading ? (
+                <div 
+                  className="absolute inset-0 flex flex-col items-center justify-center"
+                  style={{
+                    backgroundImage: `url(${loadingBackgrounds[loadingBgIndex]})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    transition: 'background-image 0.2s ease-in-out'
+                  }}
+                >
+                  <div className="bg-black/50 p-6 rounded-lg">
+                    <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mb-4 mx-auto"></div>
+                    <p className="pixel-text text-white text-xl text-center">Checking recent Sui onchain activity...</p>
+                  </div>
+                </div>
+              ) : (
                 <>
-                  <div className={`underwater-bg rank-${tankRank}`}></div>
-
-                  {/* More decorations based on rank */}
-                  <div className="underwater-plant" style={{ left: "10%" }}></div>
-                  <div className="underwater-plant" style={{ left: "25%", height: "24px" }}></div>
-                  <div className="underwater-rock" style={{ left: "40%" }}></div>
-                  <div className="underwater-plant" style={{ left: "60%" }}></div>
-                  <div className="underwater-rock" style={{ left: "75%" }}></div>
-                  <div className="underwater-plant" style={{ left: "85%", height: "28px" }}></div>
-
-                  {tankRank >= 2 && (
+                  {/* 背景がない場合のデフォルト背景 */}
+                  {!tankBackground && (
                     <>
-                      <div className="underwater-plant" style={{ left: "15%", height: "32px" }}></div>
-                      <div className="underwater-rock" style={{ left: "30%", width: "32px" }}></div>
+                      <div className={`underwater-bg rank-${tankRank}`}></div>
+
+                      {/* More decorations based on rank */}
+                      <div className="underwater-plant" style={{ left: "10%" }}></div>
+                      <div className="underwater-plant" style={{ left: "25%", height: "24px" }}></div>
+                      <div className="underwater-rock" style={{ left: "40%" }}></div>
+                      <div className="underwater-plant" style={{ left: "60%" }}></div>
+                      <div className="underwater-rock" style={{ left: "75%" }}></div>
+                      <div className="underwater-plant" style={{ left: "85%", height: "28px" }}></div>
+
+                      {tankRank >= 2 && (
+                        <>
+                          <div className="underwater-plant" style={{ left: "15%", height: "32px" }}></div>
+                          <div className="underwater-rock" style={{ left: "30%", width: "32px" }}></div>
+                        </>
+                      )}
+
+                      {tankRank >= 3 && (
+                        <>
+                          <div className="underwater-plant" style={{ left: "50%", height: "36px" }}></div>
+                          <div className="underwater-rock" style={{ left: "65%", width: "28px" }}></div>
+                          <div className="pixel-text text-xs absolute" style={{ left: "20%", top: "30%" }}>
+                            ✨
+                          </div>
+                        </>
+                      )}
+
+                      {tankRank >= 4 && (
+                        <>
+                          <div className="pixel-text text-xs absolute" style={{ left: "40%", top: "20%" }}>
+                            💎
+                          </div>
+                          <div className="pixel-text text-xs absolute" style={{ left: "70%", top: "40%" }}>
+                            🌟
+                          </div>
+                        </>
+                      )}
+
+                      {tankRank >= 5 && (
+                        <>
+                          <div className="pixel-text text-xs absolute" style={{ left: "30%", top: "15%" }}>
+                            👑
+                          </div>
+                          <div className="pixel-text text-xs absolute" style={{ left: "60%", top: "25%" }}>
+                            🏆
+                          </div>
+                          <div className="pixel-text text-xs absolute" style={{ left: "80%", top: "35%" }}>
+                            💫
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
 
-                  {tankRank >= 3 && (
-                    <>
-                      <div className="underwater-plant" style={{ left: "50%", height: "36px" }}></div>
-                      <div className="underwater-rock" style={{ left: "65%", width: "28px" }}></div>
-                      <div className="pixel-text text-xs absolute" style={{ left: "20%", top: "30%" }}>
-                        ✨
-                      </div>
-                    </>
-                  )}
-
-                  {tankRank >= 4 && (
-                    <>
-                      <div className="pixel-text text-xs absolute" style={{ left: "40%", top: "20%" }}>
-                        💎
-                      </div>
-                      <div className="pixel-text text-xs absolute" style={{ left: "70%", top: "40%" }}>
-                        🌟
-                      </div>
-                    </>
-                  )}
-
-                  {tankRank >= 5 && (
-                    <>
-                      <div className="pixel-text text-xs absolute" style={{ left: "30%", top: "15%" }}>
-                        👑
-                      </div>
-                      <div className="pixel-text text-xs absolute" style={{ left: "60%", top: "25%" }}>
-                        🏆
-                      </div>
-                      <div className="pixel-text text-xs absolute" style={{ left: "80%", top: "35%" }}>
-                        💫
-                      </div>
-                    </>
-                  )}
+                  {/* オブジェクトの表示 */}
+                  {objects.map((obj) => {
+                    if (obj.type === "fish") {
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={obj.x}
+                          y={obj.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <Fish color={obj.color} x={0} y={0} />
+                        </DraggableObject>
+                      )
+                    } else if (obj.type === "plant") {
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={obj.x}
+                          y={obj.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <Plant color={obj.color} x={0} y={0} />
+                        </DraggableObject>
+                      )
+                    } else if (obj.type === "decoration") {
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={obj.x}
+                          y={obj.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <Decoration name={obj.name} x={0} y={0} />
+                        </DraggableObject>
+                      )
+                    } else if (obj.type === "synObject") {
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={obj.x}
+                          y={obj.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <div className="text-4xl">{obj.image}</div>
+                        </DraggableObject>
+                      )
+                    } else if (obj.type === "nft") {
+                      const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
+                      return (
+                        <DraggableObject
+                          key={obj.id}
+                          id={obj.id}
+                          x={position.x}
+                          y={position.y}
+                          isOwner={isOwner}
+                          onMove={handleObjectMove}
+                        >
+                          <img 
+                            src={obj.image} 
+                            alt={obj.name} 
+                            className="w-[153.6px] h-[153.6px] object-contain"
+                          />
+                        </DraggableObject>
+                      )
+                    }
+                    return null
+                  })}
                 </>
               )}
-              {objects.map((obj) => {
-                if (obj.type === "fish") {
-                  return (
-                    <DraggableObject
-                      key={obj.id}
-                      id={obj.id}
-                      x={obj.x}
-                      y={obj.y}
-                      isOwner={isOwner}
-                      onMove={handleObjectMove}
-                    >
-                      <Fish color={obj.color} x={0} y={0} />
-                    </DraggableObject>
-                  )
-                } else if (obj.type === "plant") {
-                  return (
-                    <DraggableObject
-                      key={obj.id}
-                      id={obj.id}
-                      x={obj.x}
-                      y={obj.y}
-                      isOwner={isOwner}
-                      onMove={handleObjectMove}
-                    >
-                      <Plant color={obj.color} x={0} y={0} />
-                    </DraggableObject>
-                  )
-                } else if (obj.type === "decoration") {
-                  return (
-                    <DraggableObject
-                      key={obj.id}
-                      id={obj.id}
-                      x={obj.x}
-                      y={obj.y}
-                      isOwner={isOwner}
-                      onMove={handleObjectMove}
-                    >
-                      <Decoration name={obj.name} x={0} y={0} />
-                    </DraggableObject>
-                  )
-                } else if (obj.type === "synObject") {
-                  return (
-                    <DraggableObject
-                      key={obj.id}
-                      id={obj.id}
-                      x={obj.x}
-                      y={obj.y}
-                      isOwner={isOwner}
-                      onMove={handleObjectMove}
-                    >
-                      <div className="text-4xl">{obj.image}</div>
-                    </DraggableObject>
-                  )
-                } else if (obj.type === "nft") {
-                  const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
-                  return (
-                    <DraggableObject
-                      key={obj.id}
-                      id={obj.id}
-                      x={position.x}
-                      y={position.y}
-                      isOwner={isOwner}
-                      onMove={handleObjectMove}
-                    >
-                      <img 
-                        src={obj.image} 
-                        alt={obj.name} 
-                        className="w-[153.6px] h-[153.6px] object-contain"
-                      />
-                    </DraggableObject>
-                  )
-                }
-                return null
-              })}
             </div>
 
-            {isOwner && (
+            {isOwner && !isContentLoading && (
               <div className="mt-2 text-xs text-gray-600">
                 {objects.length === 0
                   ? "Drag objects from MyBox to place them in the tank"
@@ -918,7 +981,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
               </div>
             )}
 
-            {isOwner && hasChanges && (
+            {isOwner && hasChanges && !isContentLoading && (
               <div className="flex justify-end mt-4">
                 <button 
                   onClick={handleAttachAndSave}
