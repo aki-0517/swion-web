@@ -45,6 +45,7 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
   const suiClient = useSuiClient()
   const [isLoading, setIsLoading] = useState(false)
   const [project, setProject] = useState<Project | null>(null)
+  const [isCheckingEligibility, setIsCheckingEligibility] = useState(true)
 
   const formatMintFlag = (mintFlag: MintFlag) => {
     return `${mintFlag.package}::${mintFlag.module}::${mintFlag.function}`
@@ -79,6 +80,14 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
 
     fetchProjectData()
   }, [object.project_id, toast])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsCheckingEligibility(false)
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, []) 
 
   const handleMint = async () => {
     setIsLoading(true)
@@ -191,13 +200,22 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
 
             {/* Mint button */}
             <div className="mt-6">
-              <button
-                onClick={handleMint}
-                disabled={isLoading}
-                className="game-button w-full py-2"
-              >
-                {isLoading ? "Minting..." : "Mint NFT"}
-              </button>
+              {isCheckingEligibility ? (
+                <button
+                  disabled
+                  className="game-button w-full py-2 bg-gray-200 text-gray-700"
+                >
+                  Checking Eligibility...
+                </button>
+              ) : (
+                <button
+                  onClick={handleMint}
+                  disabled={isLoading}
+                  className="game-button w-full py-2"
+                >
+                  {isLoading ? "Minting..." : "Mint NFT"}
+                </button>
+              )}
               <p className="text-xs text-gray-500 text-center mt-2">
                 When you mint this NFT, it will be transferred to your wallet
               </p>
