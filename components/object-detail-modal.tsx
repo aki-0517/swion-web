@@ -46,6 +46,7 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
   const [isLoading, setIsLoading] = useState(false)
   const [project, setProject] = useState<Project | null>(null)
   const [isCheckingEligibility, setIsCheckingEligibility] = useState(true)
+  const [walletError, setWalletError] = useState<string | null>(null)
 
   const formatMintFlag = (mintFlag: MintFlag) => {
     return `${mintFlag.package}::${mintFlag.module}::${mintFlag.function}`
@@ -82,12 +83,17 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
   }, [object.project_id, toast])
 
   useEffect(() => {
+    // 3秒のタイマーを開始
     const timer = setTimeout(() => {
+      // ウォレット接続状態を確認
+      if (!account) {
+        setWalletError("No wallet found. Please connect your wallet to mint NFTs.")
+      }
       setIsCheckingEligibility(false)
     }, 3000)
 
     return () => clearTimeout(timer)
-  }, []) 
+  }, [account]) 
 
   const handleMint = async () => {
     setIsLoading(true)
@@ -207,6 +213,18 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
                 >
                   Checking Eligibility...
                 </button>
+              ) : walletError ? (
+                <>
+                  <button
+                    disabled
+                    className="game-button w-full py-2 bg-red-200 text-red-800"
+                  >
+                    Wallet Not Connected
+                  </button>
+                  <p className="text-xs text-red-500 text-center mt-2">
+                    {walletError}
+                  </p>
+                </>
               ) : (
                 <button
                   onClick={handleMint}
@@ -216,9 +234,11 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
                   {isLoading ? "Minting..." : "Mint NFT"}
                 </button>
               )}
-              <p className="text-xs text-gray-500 text-center mt-2">
-                When you mint this NFT, it will be transferred to your wallet
-              </p>
+              {!walletError && (
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  When you mint this NFT, it will be transferred to your wallet
+                </p>
+              )}
             </div>
           </div>
         </div>
