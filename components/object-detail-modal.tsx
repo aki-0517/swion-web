@@ -22,6 +22,7 @@ interface NFTObject {
   created_at: string
   updated_at: string
   project_id: number
+  mint_flag_text?: string
 }
 
 interface Project {
@@ -179,7 +180,7 @@ export default function ObjectDetailModal({ object, onClose }: ObjectDetailModal
             <div>
               <h4 className="pixel-text text-sm">Mint Flag:</h4>
               <p className="text-sm font-mono bg-gray-100 p-2 rounded">
-                {formatMintFlag(object.mint_flag)}
+                {object.mint_flag_text || formatMintFlag(object.mint_flag)}
               </p>
             </div>
 

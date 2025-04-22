@@ -19,6 +19,7 @@ interface NFTObject {
   created_at: string
   updated_at: string
   project_id: number
+  mint_flag_text?: string
 }
 
 interface Project {
@@ -69,6 +70,7 @@ export default function ObjectList({ projectId, onSelectObject }: ObjectListProp
           name,
           image,
           mint_flag,
+          mint_flag_text,
           created_at,
           updated_at,
           project_id
@@ -146,7 +148,7 @@ export default function ObjectList({ projectId, onSelectObject }: ObjectListProp
           </div>
           <h3 className="pixel-text text-sm">{object.name}</h3>
           <div className="text-xs text-gray-600 mt-1">
-            Mint Flag: {formatMintFlag(object.mint_flag)}
+            Mint Flag: {object.mint_flag_text || formatMintFlag(object.mint_flag)}
           </div>
         </div>
       ))}
