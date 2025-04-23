@@ -48,7 +48,7 @@ export default function ProjectList({ onSelectProject }: ProjectListProps) {
       {projects.map((project) => (
         <div key={project.id} className="pixel-card p-4 cursor-pointer" onClick={() => onSelectProject(project.id)}>
           <div className="flex items-center">
-            <div className="w-12 h-12 bg-blue-200 border-2 border-black mr-4 flex items-center justify-center overflow-hidden">
+            <div className="w-12 h-12 flex-shrink-0 bg-blue-200 border-2 border-black mr-4 flex items-center justify-center overflow-hidden">
               {project.logo_image ? (
                 <Image
                   src={project.logo_image}
@@ -62,12 +62,12 @@ export default function ProjectList({ onSelectProject }: ProjectListProps) {
               )}
             </div>
 
-            <div>
-              <h3 className="pixel-text text-sm">{project.name}</h3>
-              <p className="text-sm text-gray-600">{project.description}</p>
+            <div className="flex-grow min-w-0">
+              <h3 className="pixel-text text-sm truncate">{project.name}</h3>
+              <p className="text-sm text-gray-600 truncate">{project.description}</p>
             </div>
 
-            <button className="game-button ml-auto px-2 py-1 text-sm">Details</button>
+            <button className="game-button ml-2 sm:ml-auto px-1 py-1 sm:px-2 sm:py-1 text-xs sm:text-sm whitespace-nowrap hidden sm:block">Details</button>
           </div>
         </div>
       ))}
