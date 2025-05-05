@@ -33,7 +33,7 @@ export default function CollectionsPage() {
           // Convert each recipe to SynObject format
           const formattedRecipes = data.map(recipe => ({
             id: recipe.id,
-            name: recipe.result_name,
+            name: recipe.name,
             image: recipe.image_url,
             image_url: recipe.image_url,
             rarity: recipe.result_rarity,

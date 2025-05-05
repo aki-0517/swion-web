@@ -52,7 +52,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
         
         if (recipe) {
           setResultObject({
-            name: recipe.result_name,
+            name: recipe.name,
             image: recipe.image_url,
             rarity: recipe.result_rarity,
             price: recipe.price,
@@ -161,7 +161,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
       // Success notification
       toast({
         title: "Success",
-        description: "SynObject created successfully!",
+        description: "Blends created successfully!",
       })
 
       // Close modal
@@ -175,7 +175,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
       console.error("Mint error:", error);
       toast({
         title: "Error",
-        description: "Failed to create SynObject",
+        description: "Failed to create Blends",
         variant: "destructive",
       })
     }
@@ -188,7 +188,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
       <div className="relative w-full max-w-2xl bg-white rounded-xl border border-gray-200 shadow-lg">
         {/* Header */}
         <div className="bg-blue-50 border-b border-gray-200 p-4 flex justify-between items-center rounded-t-xl">
-          <h2 className="pixel-text text-gray-700 text-lg">Synthesis</h2>
+          <h2 className="pixel-text text-gray-700 text-lg">Brend</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
             <X size={24} />
           </button>
@@ -269,7 +269,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
                 )}
               </div>
               <div className="pixel-text text-xs text-gray-700 text-center mt-2">
-                {isLoading ? "Synthesizing..." : resultObject ? resultObject.name : "Unknown item"}
+                {isLoading ? "Checking..." : resultObject ? resultObject.name : "Unknown item"}
               </div>
               {!isLoading && resultObject?.rarity && (
                 <div
@@ -301,7 +301,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
                   className="game-button synthesis-button px-8 py-2" 
                   disabled={isLoading}
                 >
-                  {isLoading ? "Synthesizing..." : "Mint SynObject"}
+                  {isLoading ? "Blending..." : "Mint Blends"}
                 </button>
               </div>
             </>

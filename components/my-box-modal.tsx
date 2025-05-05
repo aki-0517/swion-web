@@ -170,7 +170,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
     if (object.type === "synObject") {
       toast({
         title: "Cannot Select",
-        description: "SynObjects cannot be used for synthesis",
+        description: "Blends cannot be used for Blend",
         variant: "destructive",
       })
       return
@@ -336,15 +336,15 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
             }`}
             onClick={() => setActiveTab("synObjects")}
           >
-            SynObjects
+            Brends
           </button>
         </div>
 
         {activeTab !== "synObjects" && (
           <div className="p-4 border-b border-gray-200 bg-stone-100">
-            <div className="pixel-text text-stone-800 text-sm mb-2">Synthesis Area</div>
+            <div className="pixel-text text-stone-800 text-sm mb-2">Brend Area</div>
             <div className="flex justify-between items-center mb-2">
-              <div className="text-xs text-gray-600">Select up to 3 objects to synthesize</div>
+              <div className="text-xs text-gray-600">Select up to 3 objects to brend</div>
               <button
                 className={`game-button synthesis-button px-3 py-1 text-xs bg-stone-600 text-white hover:bg-stone-700 ${
                   selectedForSynthesis.length === 0 
@@ -354,7 +354,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                 onClick={startSynthesis}
                 disabled={selectedForSynthesis.length === 0}
               >
-                Publish
+                Check Recipe
               </button>
             </div>
 
@@ -414,7 +414,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
               ? "All Objects"
               : activeTab === "components"
                 ? "Component Objects"
-                : "Synthesized Objects"}
+                : "Brends Objects"}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -489,7 +489,7 @@ export default function MyBoxModal({ onClose }: MyBoxModalProps) {
                 <div className="pixel-text text-stone-800 text-xs">{object.name}</div>
                 <div className="flex justify-between items-center">
                   <div className="text-xs text-gray-500">
-                    {object.type === "synObject" ? "SynObject" : object.type}
+                    {object.type === "synObject" ? "Brends" : object.type}
                   </div>
                   {object.rarity && (
                     <div

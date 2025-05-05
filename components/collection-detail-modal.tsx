@@ -138,8 +138,8 @@ export default function CollectionDetailModal({ collectionId, onClose }: Collect
 
             <div className="text-xs text-gray-600 mb-4">
               {collection.creator === "You"
-                ? "This is your SynObject. You can list it for sale in the marketplace."
-                : "This SynObject is available for purchase. Fees will be distributed to the creator and component projects."}
+                ? "This is your Blends. You can list it for sale in the marketplace."
+                : "This Blends is available for purchase. Fees will be distributed to the creator and component projects."}
             </div>
 
             {collection.creator === "You" ? (

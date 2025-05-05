@@ -154,7 +154,7 @@ export default function ObjectActionModal({
                 onClick={onAddToSynthesis}
                 className="game-button synthesis-button w-full py-2"
               >
-                Add to Synthesis
+                Add to Blend
               </button>
             )}
 

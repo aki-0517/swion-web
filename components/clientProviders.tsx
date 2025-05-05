@@ -28,7 +28,7 @@ export default function ClientProviders({
       {/* SuiClientProvider でネットワークの設定を提供 */}
       <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
         {/* WalletProvider でウォレットの状態を全体に渡す */}
-        <WalletProvider autoConnect={false}>
+        <WalletProvider autoConnect={true}>
           {children}
         </WalletProvider>
       </SuiClientProvider>
