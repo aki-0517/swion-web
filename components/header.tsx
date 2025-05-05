@@ -177,8 +177,16 @@ export default function Header({ onWalletSearch }: HeaderProps) {
               Explore
             </Link>
             <Link href="/collections" className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-              Collections
+              Recipes
             </Link>
+            <a
+              href="https://swion.gitbook.io/swion"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+            >
+              Docs
+            </a>
           </nav>
 
           {/* モバイルメニューボタン */}
@@ -261,8 +269,17 @@ export default function Header({ onWalletSearch }: HeaderProps) {
               className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              Collections
+              Recipes
             </Link>
+            <a
+              href="https://swion.gitbook.io/swion"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Docs
+            </a>
             <form onSubmit={(e) => {
               handleSearch(e);
               setIsMobileMenuOpen(false);

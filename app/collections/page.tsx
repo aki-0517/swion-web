@@ -78,7 +78,7 @@ export default function CollectionsPage() {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <h1 className="pixel-text text-2xl mb-6">Recipe Collection</h1>
+        <h1 className="pixel-text text-2xl mb-6 text-white">Recipe Collection</h1>
         
         {loading ? (
           <div className="text-center py-12">
