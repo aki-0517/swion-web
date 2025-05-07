@@ -20,6 +20,7 @@ interface NFTObject {
   updated_at: string
   project_id: number
   mint_flag_text?: string
+  is_public: boolean
 }
 
 interface Project {
@@ -73,9 +74,11 @@ export default function ObjectList({ projectId, onSelectObject }: ObjectListProp
           mint_flag_text,
           created_at,
           updated_at,
-          project_id
+          project_id,
+          is_public
         `)
         .eq('project_id', projectId)
+        .eq('is_public', true)
 
       if (objectsError) {
         toast({
