@@ -255,6 +255,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       } else {
         console.log("WaterTank object not found, switching to local mode")
         setIsLocalMode(true)
+        setTankExists(false)
         setIsContentLoading(false)
       }
     } catch (error) {
