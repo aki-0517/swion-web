@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react"
 
 interface ObjectActionModalProps {
   object: any
@@ -10,6 +11,20 @@ interface ObjectActionModalProps {
   onPlaceInTank: (object: any) => void
   canAddToSynthesis: boolean
   onPublish?: () => void
+}
+
+interface EvolutionPath {
+  id: number
+  pre_evolution_name: string
+  post_evolution_name: string
+  evolution_condition: {
+    token: string
+    minimum_amount: number
+    required_action: string
+  }
+  evolution_condition_text: string
+  created_at: string
+  updated_at: string
 }
 
 export default function ObjectActionModal({
@@ -21,6 +36,42 @@ export default function ObjectActionModal({
   onPublish,
 }: ObjectActionModalProps) {
   const { toast } = useToast()
+  const [evolutionPath, setEvolutionPath] = useState<EvolutionPath | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchDone, setSearchDone] = useState(false)
+
+  useEffect(() => {
+    // SynObjectの場合は検索しない
+    if (object?.name && object?.type !== "synObject") {
+      setIsSearching(true)
+      setSearchDone(false)
+      
+      // 本来はAPIからデータを取得するが、サンプルデータを使用
+      const mockEvolutionPaths = [
+        {
+          id: 1,
+          pre_evolution_name: "Cetus NFT #1",
+          post_evolution_name: "Cetus NFT #1.1",
+          evolution_condition: {
+            token: "SUI",
+            minimum_amount: 1000,
+            required_action: "trading_volume"
+          },
+          evolution_condition_text: "Traded at least 1000 SUI on Cetus DEX",
+          created_at: "2025-05-07 05:44:24.899231+00",
+          updated_at: "2025-05-07 05:44:24.899231+00"
+        }
+      ]
+      
+      // オブジェクト名で進化経路を検索する
+      setTimeout(() => {
+        const path = mockEvolutionPaths.find(p => p.pre_evolution_name === object.name)
+        setEvolutionPath(path || null)
+        setIsSearching(false)
+        setSearchDone(true)
+      }, 1000) // 検索シミュレーション
+    }
+  }, [object?.name, object?.type])
 
   const handleDragToTank = () => {
     const dragObject = {
@@ -66,6 +117,17 @@ export default function ObjectActionModal({
       onPublish()
     }
     onClose()
+  }
+
+  const handleEvolve = () => {
+    if (evolutionPath) {
+      toast({
+        title: "進化処理を開始します",
+        description: `${evolutionPath.pre_evolution_name}から${evolutionPath.post_evolution_name}に進化します`,
+      })
+      // 実際の進化処理をここに実装
+      onClose()
+    }
   }
 
   return (
@@ -173,6 +235,38 @@ export default function ObjectActionModal({
             >
               Place in Tank
             </button>
+            
+            {/* SynObjectではない場合のみEvolutionボタンを表示 */}
+            {object.type !== "synObject" && (
+              <>
+                {isSearching && (
+                  <button
+                    disabled
+                    className="game-button w-full py-2 bg-gray-200 text-gray-600"
+                  >
+                    Searching...
+                  </button>
+                )}
+                
+                {!isSearching && searchDone && evolutionPath && (
+                  <button
+                    onClick={handleEvolve}
+                    className="game-button evolve-button w-full py-2 bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    Evolve to {evolutionPath.post_evolution_name}
+                  </button>
+                )}
+                
+                {!isSearching && searchDone && !evolutionPath && (
+                  <button
+                    disabled
+                    className="game-button w-full py-2 bg-gray-200 text-gray-600 cursor-not-allowed"
+                  >
+                    No evolution path found
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
