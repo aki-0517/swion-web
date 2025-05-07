@@ -2,6 +2,10 @@
 
 import { X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabaseClient"
+import { useCurrentAccount, useSignTransaction, useSuiClient } from "@mysten/dapp-kit"
+import { Transaction } from "@mysten/sui/transactions"
 
 interface ObjectActionModalProps {
   object: any
@@ -10,6 +14,20 @@ interface ObjectActionModalProps {
   onPlaceInTank: (object: any) => void
   canAddToSynthesis: boolean
   onPublish?: () => void
+}
+
+interface EvolutionPath {
+  id: number
+  pre_evolution_name: string
+  post_evolution_name: string
+  evolution_condition: {
+    token: string
+    minimum_amount: number
+    required_action: string
+  }
+  evolution_condition_text: string
+  created_at: string
+  updated_at: string
 }
 
 export default function ObjectActionModal({
@@ -21,6 +39,66 @@ export default function ObjectActionModal({
   onPublish,
 }: ObjectActionModalProps) {
   const { toast } = useToast()
+  const [evolutionPath, setEvolutionPath] = useState<EvolutionPath | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchDone, setSearchDone] = useState(false)
+  const [evolvedNftImage, setEvolvedNftImage] = useState<string | null>(null)
+  const [isEvolving, setIsEvolving] = useState(false)
+  
+  // 必要なSuiのフックを追加
+  const account = useCurrentAccount()
+  const suiClient = useSuiClient()
+  const signTransaction = useSignTransaction()
+
+  useEffect(() => {
+    // SynObjectの場合は検索しない
+    if (object?.name && object?.type !== "synObject") {
+      setIsSearching(true)
+      setSearchDone(false)
+      setEvolvedNftImage(null)
+      
+      // evolution_pathsテーブルから進化経路を取得
+      const fetchEvolutionPath = async () => {
+        try {
+          // 対象のNFT名で進化経路を検索
+          const { data: evolutionPathData, error: evolutionPathError } = await supabase
+            .from('evolution_paths')
+            .select('*')
+            .eq('pre_evolution_name', object.name);
+          
+          if (evolutionPathError) throw evolutionPathError;
+          
+          if (evolutionPathData && evolutionPathData.length > 0) {
+            setEvolutionPath(evolutionPathData[0]);
+            
+            // 進化後のNFT画像を取得
+            const { data: nftData, error: nftError } = await supabase
+              .from('nft_objects')
+              .select('image')
+              .eq('name', evolutionPathData[0].post_evolution_name)
+              .maybeSingle();
+              
+            if (nftError) throw nftError;
+            
+            if (nftData) {
+              setEvolvedNftImage(nftData.image);
+            }
+          } else {
+            console.log(`No evolution path found for ${object.name}`);
+          }
+          
+          setIsSearching(false);
+          setSearchDone(true);
+        } catch (error) {
+          console.error('Error fetching evolution data:', error);
+          setIsSearching(false);
+          setSearchDone(true);
+        }
+      };
+      
+      fetchEvolutionPath();
+    }
+  }, [object?.name, object?.type]);
 
   const handleDragToTank = () => {
     const dragObject = {
@@ -67,6 +145,93 @@ export default function ObjectActionModal({
     }
     onClose()
   }
+
+  const handleEvolve = async () => {
+    if (!evolutionPath || !evolvedNftImage) return;
+    if (!account) {
+      toast({
+        title: "エラー",
+        description: "ウォレットに接続されていません",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsEvolving(true);
+    
+    toast({
+      title: "進化処理を開始します",
+      description: `${evolutionPath.pre_evolution_name}から${evolutionPath.post_evolution_name}に進化します`,
+    });
+    
+    try {
+      // トランザクション作成
+      const tx = new Transaction();
+      
+      // 送信者設定
+      tx.setSender(account.address);
+      
+      // NFTの名前と画像URLをバイト配列に変換
+      const newNameBytes = Array.from(new TextEncoder().encode(evolutionPath.post_evolution_name));
+      const newImageBytes = Array.from(new TextEncoder().encode(evolvedNftImage));
+      
+      // NFTの更新処理を呼び出す
+      tx.moveCall({
+        target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system_nft::update_nft_info`,
+        arguments: [
+          tx.object(object.id),
+          tx.pure.vector("u8", newNameBytes),
+          tx.pure.vector("u8", newImageBytes),
+        ],
+      });
+      
+      // トランザクションの構築
+      await tx.build({ client: suiClient });
+      
+      // トランザクションに署名
+      const { bytes, signature } = await signTransaction.mutateAsync({
+        transaction: tx,
+      });
+      
+      // トランザクションの実行
+      const result = await suiClient.executeTransactionBlock({
+        transactionBlock: bytes,
+        signature,
+        options: { showEffects: true, showEvents: true },
+      });
+      
+      // トランザクションの完了を待つ
+      await suiClient.waitForTransaction({ digest: result.digest });
+      
+      // 進化後のNFTオブジェクトを作成
+      const evolvedObject = {
+        id: object.id,
+        type: "nft",
+        name: evolutionPath.post_evolution_name,
+        image: evolvedNftImage,
+        x: object.x || 50,
+        y: object.y || 50
+      };
+      
+      // 進化後のオブジェクトをタンクに配置
+      onPlaceInTank(evolvedObject);
+      
+      toast({
+        title: "進化完了",
+        description: `${evolutionPath.post_evolution_name}に進化しました`,
+      });
+    } catch (error) {
+      console.error('Error during evolution:', error);
+      toast({
+        title: "進化処理に失敗しました",
+        description: "エラーが発生しました。後でもう一度お試しください。",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEvolving(false);
+      onClose();
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -173,6 +338,39 @@ export default function ObjectActionModal({
             >
               Place in Tank
             </button>
+            
+            {/* SynObjectではない場合のみEvolutionボタンを表示 */}
+            {object.type !== "synObject" && (
+              <>
+                {isSearching && (
+                  <button
+                    disabled
+                    className="game-button w-full py-2 bg-gray-200 text-gray-600"
+                  >
+                    Searching...
+                  </button>
+                )}
+                
+                {!isSearching && searchDone && evolutionPath && (
+                  <button
+                    onClick={handleEvolve}
+                    disabled={isEvolving}
+                    className="game-button evolve-button w-full py-2 bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    {isEvolving ? "進化中..." : `Evolve to ${evolutionPath.post_evolution_name}`}
+                  </button>
+                )}
+                
+                {!isSearching && searchDone && !evolutionPath && (
+                  <button
+                    disabled
+                    className="game-button w-full py-2 bg-gray-200 text-gray-600 cursor-not-allowed"
+                  >
+                    No evolution path found
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

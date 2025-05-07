@@ -140,7 +140,7 @@ export default function CraftingModal({ objects, onComplete, onClose }: Crafting
       
       // Call mint_syn_object with parameters matching the contract definition
       transaction.moveCall({
-        target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::mint_syn_object`,
+        target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system_syn_object::mint_syn_object`,
         arguments: [
           // attached_objects: vector<ID>
           transaction.pure.vector("address", objects.map(obj => obj.id)),
