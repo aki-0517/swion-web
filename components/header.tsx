@@ -17,7 +17,7 @@ interface HeaderProps {
 }
 
 const PACKAGE_ID = process.env.NEXT_PUBLIC_PACKAGE_ID
-const NFT_SYSTEM_MODULE = "nft_system"
+const NFT_SYSTEM_MODULE = "nft_system_water_tank"
 const DEFAULT_BACKGROUND = "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//DB8829AA-F5CF-4EDA-922E-3C628C5AB593.PNG"
 const DEFAULT_LEVEL = 1
 

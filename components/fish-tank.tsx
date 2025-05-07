@@ -192,7 +192,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
               // NFTの型情報を取得してSynObjectかどうか判断
               const objectType = nftObject.data.type as string
               const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID ?? ""
-              const expectedSynType = `${packageId}::nft_system::SynObject`
+              const expectedSynType = `${packageId}::nft_system_syn_object::SynObject`
               
               // オブジェクトの型に応じて処理を分ける
               if (objectType === expectedSynType) {
@@ -437,8 +437,8 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
 
           // Check if the object type includes NFTObject or SynObject from the correct package
           const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID
-          const expectedNftType = `${packageId}::nft_system::NFTObject`
-          const expectedSynType = `${packageId}::nft_system::SynObject`
+          const expectedNftType = `${packageId}::nft_system_nft::NFTObject`
+          const expectedSynType = `${packageId}::nft_system_syn_object::SynObject`
 
           if (objectType === expectedNftType) {
             const position = objectPositions[obj.id] || { x: obj.x, y: obj.y }
@@ -489,7 +489,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
             console.log(`Adding calls for NFT: ${objToProcess.id}, Position: x=${objToProcess.position.x}, y=${objToProcess.position.y}`)
             // Attach NFT
             tx.moveCall({
-              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::attach_object`,
+              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system_nft::attach_object`,
               arguments: [
                 tx.object(tankId),
                 tx.object(objToProcess.id),
@@ -497,7 +497,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
             })
             // Save Layout for NFT
             tx.moveCall({
-              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::save_layout`,
+              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system_nft::save_layout`,
               arguments: [
                 tx.object(tankId),
                 tx.object(objToProcess.id),
@@ -513,7 +513,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
             
             // まずSynObjectをタンクに添付
             tx.moveCall({
-              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::attach_syn_object`,
+              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system_syn_object::attach_syn_object`,
               arguments: [
                 tx.object(tankId),
                 tx.object(objToProcess.id),
@@ -522,7 +522,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
             
             // 次にSynObjectの位置情報を更新
             tx.moveCall({
-              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::update_syn_position`,
+              target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system_syn_object::update_syn_position`,
               arguments: [
                 tx.object(tankId),
                 tx.object(objToProcess.id),
@@ -685,7 +685,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
       tx.setSender(currentAccount.address)
       
       tx.moveCall({
-        target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system::update_tank_level`,
+        target: `${process.env.NEXT_PUBLIC_PACKAGE_ID}::nft_system_nft::update_tank_level`,
         arguments: [
           tx.object(tankId),
           tx.pure.u64(newRank),
