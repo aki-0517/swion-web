@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Layout from "@/components/layout"
 import FishTank from "@/components/fish-tank"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { useSearchParams } from "next/navigation"
 
-export default function Home() {
+function WalletFishTank() {
   const [currentWallet, setCurrentWallet] = useState<string>("")
   const { toast } = useToast()
   const account = useCurrentAccount()
@@ -55,6 +55,14 @@ export default function Home() {
         <FishTank walletAddress={currentWallet} isOwner={account?.address === currentWallet} />
       </div>
     </Layout>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <WalletFishTank />
+    </Suspense>
   )
 }
 
