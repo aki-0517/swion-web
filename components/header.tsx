@@ -147,13 +147,13 @@ export default function Header({ onWalletSearch }: HeaderProps) {
     if (!account) return null
 
     if (isLoading) {
-      return <button className="pixel-button px-3 py-1 ml-4" disabled>Checking...</button>
+      return <button className="pixel-button px-3 py-1 ml-4 min-w-[120px] whitespace-nowrap" disabled>Checking...</button>
     }
 
     if (hasTank === false) {
       return (
         <button
-          className="pixel-button px-3 py-1 ml-4 bg-green-500 hover:bg-green-600 text-white"
+          className="pixel-button px-4 py-1 ml-4 bg-green-500 hover:bg-green-600 text-white min-w-[120px] whitespace-nowrap"
           onClick={mintNewTank}
           disabled={isMinting}
         >
@@ -167,23 +167,23 @@ export default function Header({ onWalletSearch }: HeaderProps) {
 
   return (
     <header className="border-b">
-      <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center space-x-8">
-          <Link href="/" className="pixel-text text-xl text-white font-bold">
-            <img src="/seionlogo.jpg" alt="Swion" className="h-10 rounded-lg" />
+      <div className="container mx-auto px-2 h-14 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Link href="/" className="pixel-text text-xl text-white font-bold flex-shrink-0 min-w-[56px]">
+            <img src="/seionlogo.jpg" alt="Swion" style={{maxHeight: "48px", width: "auto"}} className="rounded-lg" />
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/explore" className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+            <Link href="/explore" className="pixel-text text-base text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
               Explore
             </Link>
-            <Link href="/collections" className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+            <Link href="/collections" className="pixel-text text-base text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
               Recipes
             </Link>
             <a
               href="https://swion.gitbook.io/swion"
               target="_blank"
               rel="noopener noreferrer"
-              className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+              className="pixel-text text-base text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
             >
               Docs
             </a>
@@ -197,24 +197,27 @@ export default function Header({ onWalletSearch }: HeaderProps) {
             <Menu size={24} />
           </button>
         </div>
-        <div className="hidden md:flex items-center">
-          <form onSubmit={handleSearch} className="flex">
-            <input
-              type="text"
-              placeholder="Enter Wallet Address or SuiNS"
-              value={walletInput}
-              onChange={(e) => setWalletInput(e.target.value)}
-              className="pixel-input px-3 py-1 w-64"
-            />
-            <button type="submit" className="pixel-button ml-2 px-3 py-1 text-white shadow-md bg-stone-500 hover:bg-stone-600">
-              Search
-            </button>
-          </form>
-        </div>
-        <div className="flex items-center">
+        {/* 検索バー：Mintボタンが表示されていない場合のみ表示 */}
+        {!(account && hasTank === false) && (
+          <div className="hidden md:flex items-center ml-6 space-x-2 min-w-0">
+            <form onSubmit={handleSearch} className="flex">
+              <input
+                type="text"
+                placeholder="Enter Wallet Address or SuiNS"
+                value={walletInput}
+                onChange={(e) => setWalletInput(e.target.value)}
+                className="pixel-input px-3 py-1 w-[320px] text-[10px]"
+              />
+              <button type="submit" className="pixel-button ml-2 px-3 py-1 text-white shadow-md bg-stone-500 hover:bg-stone-600">
+                Search
+              </button>
+            </form>
+          </div>
+        )}
+        <div className="flex items-center ml-6 space-x-2 min-w-0">
           {account ? (
             <>
-              <ConnectButton />
+              <ConnectButton className="!h-8 !px-2 !text-xs" />
               {/* <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="pixel-button px-3 py-1 flex items-center">
@@ -237,7 +240,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
               {renderMintButton()}
             </>
           ) : (
-            <ConnectButton connectText="Connect Wallet" />
+            <ConnectButton connectText="Connect Wallet" className="!h-8 !px-2 !text-xs" />
           )}
         </div>
       </div>
@@ -259,14 +262,14 @@ export default function Header({ onWalletSearch }: HeaderProps) {
           <div className="flex-1 flex flex-col p-4 space-y-6">
             <Link
               href="/explore"
-              className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+              className="pixel-text text-base text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Explore
             </Link>
             <Link
               href="/collections"
-              className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+              className="pixel-text text-base text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Recipes
@@ -275,7 +278,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
               href="https://swion.gitbook.io/swion"
               target="_blank"
               rel="noopener noreferrer"
-              className="pixel-text text-xl text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+              className="pixel-text text-base text-white font-bold text-shadow-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Docs
@@ -289,7 +292,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
                 placeholder="Enter Wallet Address or SuiNS"
                 value={walletInput}
                 onChange={(e) => setWalletInput(e.target.value)}
-                className="pixel-input px-3 py-2 w-full"
+                className="pixel-input px-3 py-2 w-full text-sm"
               />
               <button type="submit" className="pixel-button px-3 py-2 text-white shadow-md bg-stone-500 hover:bg-stone-600 w-full">
                 Search

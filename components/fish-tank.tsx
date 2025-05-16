@@ -773,7 +773,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
           <div className="pixel-container p-4 bg-stone-600">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b border-gray-300 pb-2">
               <div className="flex items-center mb-2 sm:mb-0">
-                <h2 className="pixel-text text-xl text-white font-bold truncate max-w-[200px] sm:max-w-none">
+                <h2 className="pixel-text text-white font-bold truncate max-w-[200px] sm:max-w-none">
                   {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}'s Water Tank`}
                   {isLocalMode && <span className="text-xs ml-2 text-gray-600">(Local Mode)</span>}
                 </h2>
@@ -804,7 +804,8 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
                         <span className="text-xs">Upgrade</span>
                       </button>
                     ) : (
-                      <div className="ml-2 text-xs whitespace-nowrap">{txToNextRank} more for next rank</div>
+                      // <div className="ml-2 text-xs whitespace-nowrap">{txToNextRank} more for next rank</div>
+                      <></>
                     )}
                   </div>
                 </div>

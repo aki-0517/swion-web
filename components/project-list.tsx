@@ -63,8 +63,8 @@ export default function ProjectList({ onSelectProject }: ProjectListProps) {
             </div>
 
             <div className="flex-grow min-w-0">
-              <h3 className="pixel-text text-sm truncate">{project.name}</h3>
-              <p className="text-sm text-gray-600 truncate">{project.description}</p>
+              <h3 className="pixel-text text-lg font-bold truncate">{project.name}</h3>
+              <p className="text-xs text-gray-500 truncate">{project.description}</p>
             </div>
 
             <button className="game-button ml-2 sm:ml-auto px-1 py-1 sm:px-2 sm:py-1 text-xs sm:text-sm whitespace-nowrap hidden sm:block">Details</button>

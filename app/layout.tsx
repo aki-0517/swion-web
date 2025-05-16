@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import '@mysten/dapp-kit/dist/index.css';
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Press_Start_2P } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import ClientProviders from "@/components/clientProviders";
 
-const inter = Inter({ subsets: ["latin"] });
+const pressStart2P = Press_Start_2P({ weight: "400", subsets: ["latin"] });
 
 export const metadata = {
   title: "swion",
@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={pressStart2P.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
