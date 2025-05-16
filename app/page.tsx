@@ -5,21 +5,32 @@ import Layout from "@/components/layout"
 import FishTank from "@/components/fish-tank"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrentAccount } from "@mysten/dapp-kit"
+import { useSearchParams } from "next/navigation"
 
 export default function Home() {
   const [currentWallet, setCurrentWallet] = useState<string>("")
   const { toast } = useToast()
   const account = useCurrentAccount()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    if (account?.address) {
+    const addressParam = searchParams.get("address")
+    if (addressParam && addressParam !== currentWallet) {
+      setCurrentWallet(addressParam)
+      toast({
+        title: "水槽を表示",
+        description: `${addressParam}の水槽を表示しています`,
+      })
+      return
+    }
+    if (account?.address && !addressParam) {
       setCurrentWallet(account.address)
       toast({
         title: "水槽を表示",
         description: `${account.address}の水槽を表示しています`,
       })
     }
-  }, [account?.address])
+  }, [account?.address, searchParams])
 
   const handleWalletSearch = (address: string) => {
     if (!address || !address.trim()) {

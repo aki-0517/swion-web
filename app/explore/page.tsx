@@ -5,6 +5,7 @@ import Layout from "@/components/layout"
 import ProjectList from "@/components/project-list"
 import ObjectList from "@/components/object-list"
 import ObjectDetailModal from "@/components/object-detail-modal"
+import { useRouter } from "next/navigation"
 
 // NFTObjectの型定義をインポートまたは再定義
 interface MintFlag {
@@ -26,10 +27,13 @@ interface NFTObject {
 export default function ExplorePage() {
   const [selectedProject, setSelectedProject] = useState<number | null>(null)
   const [selectedObject, setSelectedObject] = useState<NFTObject | null>(null)
+  const router = useRouter()
 
   return (
     <Layout onWalletSearch={function (address: string): void {
-      throw new Error("Function not implemented.")
+      if (address && address.trim()) {
+        router.push(`/?address=${encodeURIComponent(address)}`)
+      }
     }}>
       <div className="w-full max-w-6xl mx-auto p-4">
         <div className="pixel-container p-4">

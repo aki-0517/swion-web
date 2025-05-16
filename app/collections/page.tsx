@@ -7,6 +7,7 @@ import Header from "@/components/header"
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
 import { supabase } from "@/lib/supabaseClient"
 import { X } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function CollectionsPage() {
   const [recipes, setRecipes] = useState<any[]>([])
@@ -15,6 +16,7 @@ export default function CollectionsPage() {
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     // Fetch data from syn_recipes
@@ -73,7 +75,9 @@ export default function CollectionsPage() {
     <div className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed" style={{ backgroundImage: 'url("https://embed.pixiv.net/artwork.php?illust_id=116659447&mdate=1709654598")' }}>
       <Header 
         onWalletSearch={(address: string) => {
-          console.log("Searching wallet:", address)
+          if (address && address.trim()) {
+            router.push(`/?address=${encodeURIComponent(address)}`)
+          }
         }}
       />
 
