@@ -13,6 +13,8 @@ const pressStart2P = Press_Start_2P({ weight: "400", subsets: ["latin"] });
 
 const DOT_FONT = '"Press Start 2P", "DotGothic16", "monospace"';
 
+const FOOTER_HEIGHT = 220; // フッターの高さ（必要に応じて調整）
+
 export default function LPPage() {
   // Projectロゴ取得用
   const [projectLogos, setProjectLogos] = useState<string[]>([]);
@@ -30,6 +32,69 @@ export default function LPPage() {
     fetchLogos();
   }, []);
 
+  // Suiロゴを全体に浮かせる
+  function SuiFloatingLogos() {
+    const suiLogo = "https://upload.wikimedia.org/wikipedia/commons/6/63/Sui_Symbol_Sea.png";
+    const logoCount = 40; // ロゴの数を増やす
+    const logos = Array.from({ length: logoCount });
+    const [pageHeight, setPageHeight] = useState(0);
+
+    useEffect(() => {
+      function updateHeight() {
+        setPageHeight(document.body.scrollHeight);
+      }
+      updateHeight();
+      window.addEventListener('resize', updateHeight);
+      return () => window.removeEventListener('resize', updateHeight);
+    }, []);
+
+    if (!pageHeight) return null;
+
+    return (
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: pageHeight, pointerEvents: 'none', zIndex: 1 }}>
+        {logos.map((_, i) => {
+          const size = Math.random() * 40 + 40; // 40~80px
+          const left = Math.random() * 90; // 0~90vw
+          const topPx = Math.random() * (pageHeight - FOOTER_HEIGHT - size); // フッターに被らない範囲
+          const duration = Math.random() * 8 + 8; // 8~16秒
+          const delay = Math.random() * 8; // 0~8秒
+          return (
+            <img
+              key={i}
+              src={suiLogo}
+              alt="Sui Logo"
+              width={size}
+              height={size}
+              style={{
+                position: 'absolute',
+                left: `${left}vw`,
+                top: `${topPx}px`,
+                opacity: 0.35, // より濃く
+                pointerEvents: 'none',
+                zIndex: 1,
+                animation: `suiFloatY${i} ${duration}s ease-in-out ${delay}s infinite alternate`,
+                filter: 'drop-shadow(0 2px 8px #00b8ff44)',
+                userSelect: 'none',
+              }}
+              className="sui-floating-logo"
+            />
+          );
+        })}
+        {/* keyframesをグローバルに追加 */}
+        <style jsx global>{`
+          ${logos
+            .map(
+              (_, i) => `@keyframes suiFloatY${i} {
+                0% { transform: translateY(0px) scale(1); }
+                100% { transform: translateY(${Math.random() * 40 + 20}px) scale(${0.9 + Math.random() * 0.3}); }
+              }`
+            )
+            .join('\n')}
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`min-h-screen w-full flex flex-col relative overflow-x-hidden ${pressStart2P.className}`}
@@ -41,6 +106,8 @@ export default function LPPage() {
         backgroundAttachment: 'fixed',
       }}
     >
+      {/* Suiロゴを全体に浮かせる */}
+      <SuiFloatingLogos />
       {/* Hero Section */}
       <section className="relative flex flex-col items-center justify-center min-h-screen w-full flex-1 px-4 text-center bg-black/30 overflow-hidden">
         {/* Projectロゴをランダムに散りばめて浮かせる */}
@@ -232,13 +299,16 @@ export default function LPPage() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full bg-[#f7efda]/80 border-t border-[#e0c3a0] py-8 mt-8 text-center text-[#3a3a3a] tracking-widest" style={{ fontFamily: DOT_FONT }}>
-        <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-4">
-          <Link href="/explore" className="underline hover:text-pink-400">Demo Site</Link>
-          <a href="https://swion.gitbook.io/swion" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">Documentation</a>
-          <a href="https://github.com/aki-0517/swion-web" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">GitHub Repositories</a>
+      <footer className="w-full bg-gradient-to-br from-[#f7efda] via-pink-100 to-blue-100 border-t-4 border-pink-300 py-16 mt-16 text-center text-[#3a3a3a] tracking-widest shadow-2xl" style={{ fontFamily: DOT_FONT, fontSize: '1.15rem', letterSpacing: '0.08em' }}>
+        <div className="flex flex-wrap flex-col md:flex-row items-center justify-center gap-8 mb-8">
+          <Link href="/explore" className="underline hover:text-pink-400 text-lg md:text-xl font-bold transition-colors">Demo Site</Link>
+          <a href="https://swion.gitbook.io/swion" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400 text-lg md:text-xl font-bold transition-colors">Documentation</a>
+          <a href="https://github.com/aki-0517/swion-web" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400 text-lg md:text-xl font-bold transition-colors">GitHub</a>
+          <a href="https://youtu.be/gPwP3yuRwSo" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400 text-lg md:text-xl font-bold transition-colors">Demo Video</a>
+          <a href="https://youtu.be/6xwv1BoOh-Q" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400 text-lg md:text-xl font-bold transition-colors">Pitch Video</a>
+          <a href="https://docs.google.com/presentation/d/1OU_K_BjJ8DLInOLNPXK5O1uWy1-VbI10ho0SIpjGVgI/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="underline hover:text-yellow-600 text-lg md:text-xl font-bold transition-colors">Pitch Deck</a>
         </div>
-        <div className="text-xs text-gray-500">© 2025 SWION.</div>
+        <div className="text-sm md:text-base text-gray-600 font-semibold">© 2025 SWION.</div>
       </footer>
     </div>
   );
