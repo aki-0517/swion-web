@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import Header from "@/components/header"
 import MyBoxModal from "@/components/my-box-modal"
 import { useCurrentAccount } from "@mysten/dapp-kit"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 
 
 interface LayoutProps {
@@ -55,6 +56,30 @@ export default function Layout({
       </div>
 
       {isMyBoxOpen && <MyBoxModal onClose={() => setIsMyBoxOpen(false)} />}
+
+      {/* Testnet Demo Announcement - Marquee Style */}
+      <div className="fixed bottom-4 left-0 z-50 w-full px-0 mx-0 pointer-events-none select-none">
+        <div className="mx-4 rounded-lg bg-black border border-yellow-700 shadow overflow-hidden h-10 flex items-center">
+          <div className="relative w-full h-full overflow-hidden">
+            <div
+              className="whitespace-nowrap flex items-center animate-marquee"
+              style={{
+                animation: 'marquee 18s linear infinite',
+              }}
+            >
+              <span className="mx-8 text-lg font-bold text-orange-400 drop-shadow-[0_0_2px_#ff0]">
+                This is a testnet demo app. All mint flags are open for testing. Please feel free to mint any NFT for free and try it out!
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <style jsx global>{`
+        @keyframes marquee {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+      `}</style>
     </div>
   )
 }
