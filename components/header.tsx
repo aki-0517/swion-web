@@ -234,7 +234,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
                       type="button"
                       onClick={handleCopy}
                       className={`underline text-blue-600 hover:text-blue-800 transition-colors duration-150 px-1 py-0.5 rounded ${copied ? 'bg-green-100' : ''}`}
-                      style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none' }}
+                      style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none', pointerEvents: 'auto' }}
                     >
                       {ADDRESS}
                     </button>
@@ -344,7 +344,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
                         type="button"
                         onClick={handleCopy}
                         className={`underline text-blue-600 hover:text-blue-800 transition-colors duration-150 px-1 py-0.5 rounded ${copied ? 'bg-green-100' : ''}`}
-                        style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none' }}
+                        style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none', pointerEvents: 'auto' }}
                       >
                         {ADDRESS}
                       </button>
