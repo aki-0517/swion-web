@@ -106,6 +106,16 @@ export default function LPPage() {
         backgroundAttachment: 'fixed',
       }}
     >
+      {/* スマホ用の背景繰り返しCSSを追加 */}
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          .min-h-screen.w-full.flex.flex-col.relative.overflow-x-hidden.${pressStart2P.className.replace(/ /g, ".")} {
+            background-repeat: repeat !important;
+            background-attachment: scroll !important;
+            background-size: 100vw 100vh !important;
+          }
+        }
+      `}</style>
       {/* Suiロゴを全体に浮かせる */}
       <SuiFloatingLogos />
       {/* Hero Section */}
