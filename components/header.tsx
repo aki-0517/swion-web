@@ -28,6 +28,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
   const [isMinting, setIsMinting] = useState(false)
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const account = useCurrentAccount()
   const suiClient = useSuiClient()
@@ -39,6 +40,14 @@ export default function Header({ onWalletSearch }: HeaderProps) {
     client,
     network: 'testnet',
   });
+
+  const ADDRESS = "0x091e92c20ac460ac5d539c110d191cc26dfdc51f5c6bdbc219eaaf150df4047b"
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(ADDRESS)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -199,7 +208,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
         </div>
         {/* 検索バー：Mintボタンが表示されていない場合のみ表示 */}
         {!(account && hasTank === false) && (
-          <div className="hidden md:flex items-center ml-6 space-x-2 min-w-0">
+          <div className="hidden md:flex items-center ml-6 space-x-2 min-w-0 relative">
             <form onSubmit={handleSearch} className="flex">
               <input
                 type="text"
@@ -212,6 +221,31 @@ export default function Header({ onWalletSearch }: HeaderProps) {
                 Search
               </button>
             </form>
+            {/* 英語バルーン: ウォレット未接続時のみ、検索バーの下に表示 */}
+            {!account && (
+              <div
+                className="absolute left-1/2 top-full -translate-x-1/2 mt-2 z-20"
+                style={{ pointerEvents: 'none', animation: 'floatY 3s ease-in-out infinite' }}
+              >
+                <div className="relative bg-white/90 text-black text-xs px-4 py-2 rounded-xl shadow-lg border border-stone-300 max-w-xs text-center">
+                  <span style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '11px' }}>
+                    Try searching for:<br />
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      className={`underline text-blue-600 hover:text-blue-800 transition-colors duration-150 px-1 py-0.5 rounded ${copied ? 'bg-green-100' : ''}`}
+                      style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none' }}
+                    >
+                      {ADDRESS}
+                    </button>
+                  </span>
+                  <span className="ml-2 text-green-600 text-[10px] font-bold" style={{visibility: copied ? 'visible' : 'hidden'}}>
+                    Copied!
+                  </span>
+                  <span className="absolute left-1/2 -top-2 -translate-x-1/2 w-4 h-4 bg-white/90 border-l border-t border-stone-300 rotate-45"></span>
+                </div>
+              </div>
+            )}
           </div>
         )}
         <div className="flex items-center ml-6 space-x-2 min-w-0">
@@ -286,7 +320,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
             <form onSubmit={(e) => {
               handleSearch(e);
               setIsMobileMenuOpen(false);
-            }} className="flex flex-col space-y-2 mt-6">
+            }} className="flex flex-col space-y-2 mt-6 relative">
               <input
                 type="text"
                 placeholder="Enter Wallet Address or SuiNS"
@@ -297,6 +331,31 @@ export default function Header({ onWalletSearch }: HeaderProps) {
               <button type="submit" className="pixel-button px-3 py-2 text-white shadow-md bg-stone-500 hover:bg-stone-600 w-full">
                 Search
               </button>
+              {/* 英語バルーン: ウォレット未接続時のみ、検索バーの下に表示 */}
+              {!account && (
+                <div
+                  className="absolute left-1/2 top-full -translate-x-1/2 mt-2 z-20"
+                  style={{ pointerEvents: 'none', animation: 'floatY 3s ease-in-out infinite' }}
+                >
+                  <div className="relative bg-white/90 text-black text-xs px-4 py-2 rounded-xl shadow-lg border border-stone-300 max-w-xs text-center">
+                    <span style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '11px' }}>
+                      Try searching for:<br />
+                      <button
+                        type="button"
+                        onClick={handleCopy}
+                        className={`underline text-blue-600 hover:text-blue-800 transition-colors duration-150 px-1 py-0.5 rounded ${copied ? 'bg-green-100' : ''}`}
+                        style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none' }}
+                      >
+                        {ADDRESS}
+                      </button>
+                    </span>
+                    <span className="ml-2 text-green-600 text-[10px] font-bold" style={{visibility: copied ? 'visible' : 'hidden'}}>
+                      Copied!
+                    </span>
+                    <span className="absolute left-1/2 -top-2 -translate-x-1/2 w-4 h-4 bg-white/90 border-l border-t border-stone-300 rotate-45"></span>
+                  </div>
+                </div>
+              )}
             </form>
           </div>
         </div>
