@@ -158,9 +158,9 @@ export default function LPPage() {
             />
           );
         })}
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-white drop-shadow-lg z-10 tracking-widest" style={{ fontFamily: DOT_FONT, letterSpacing: '0.08em' }}>SWION</h1>
-        <h2 className="text-lg md:text-xl font-bold mb-6 text-white z-10 tracking-widest" style={{ fontFamily: DOT_FONT }}>Your Sui Acrivity, Your Aquarium</h2>
-        <p className="text-base md:text-lg mb-8 text-white z-10 tracking-widest" style={{ fontFamily: DOT_FONT }}>See your onchain activity as a living, growing aquarium.</p>
+        <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-white drop-shadow-lg z-10 tracking-widest" style={{ fontFamily: DOT_FONT, letterSpacing: '0.08em', textShadow: '0 4px 16px #000, 0 0 8px #00b8ff, 0 2px 0 #000' }}>SWION</h1>
+        <h2 className="text-lg md:text-xl font-bold mb-6 text-white z-10 tracking-widest" style={{ fontFamily: DOT_FONT, textShadow: '0 4px 16px #000, 0 0 8px #00b8ff, 0 2px 0 #000' }}>Your Sui Acrivity, Your Aquarium</h2>
+        <p className="text-base md:text-lg mb-8 text-white z-10 tracking-widest" style={{ fontFamily: DOT_FONT, textShadow: '0 4px 16px #000, 0 0 8px #00b8ff, 0 2px 0 #000' }}>See your onchain activity as a living, growing aquarium.</p>
         <Button asChild size="lg" className="bg-pink-300 hover:bg-pink-400 text-white text-lg font-bold px-8 py-4 rounded-full shadow-lg z-10 tracking-widest" style={{ fontFamily: DOT_FONT }}>
           <Link href="/explore">Open App</Link>
         </Button>
