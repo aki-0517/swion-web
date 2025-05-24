@@ -101,7 +101,7 @@ export default function LPPage() {
       style={{
         backgroundImage: 'url(https://embed.pixiv.net/artwork.php?illust_id=116659447&mdate=1709654598)',
         backgroundPosition: 'right top',
-        backgroundSize: 'auto 100vh',
+        backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundAttachment: 'fixed',
       }}
@@ -112,7 +112,7 @@ export default function LPPage() {
           .min-h-screen.w-full.flex.flex-col.relative.overflow-x-hidden.${pressStart2P.className.replace(/ /g, ".")} {
             background-repeat: repeat !important;
             background-attachment: scroll !important;
-            background-size: 100vw 100vh !important;
+            background-size: cover !important;
           }
         }
       `}</style>
