@@ -63,11 +63,13 @@ export default function Header({ onWalletSearch }: HeaderProps) {
         }
       }
 
-      // 解決したアドレスで検索を実行
+      // クエリパラメータで遷移（/ に ?address=xxx を付与）
+      router.push(`/?address=${searchAddress}`)
       onWalletSearch(searchAddress)
     } catch (error) {
       console.error('Error resolving SuiNS name:', error)
       // エラーの場合は元の入力値で検索
+      router.push(`/?address=${walletInput}`)
       onWalletSearch(walletInput)
     }
   }
