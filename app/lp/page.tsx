@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Press_Start_2P } from "next/font/google";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const pressStart2P = Press_Start_2P({ weight: "400", subsets: ["latin"] });
 
@@ -16,6 +17,7 @@ const DOT_FONT = '"Press Start 2P", "DotGothic16", "monospace"';
 const FOOTER_HEIGHT = 220; // フッターの高さ（必要に応じて調整）
 
 export default function LPPage() {
+  const [queryClient] = useState(() => new QueryClient());
   // Projectロゴ取得用
   const [projectLogos, setProjectLogos] = useState<string[]>([]);
   const [isMobile, setIsMobile] = useState(false);
@@ -106,7 +108,7 @@ export default function LPPage() {
   }
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       {/* 固定背景画像 */}
       <div
         className="lp-bg-fixed"
@@ -347,6 +349,6 @@ export default function LPPage() {
         <div className="text-sm md:text-base text-gray-600 font-semibold">© 2025 SWION.</div>
       </footer>
       </div>
-    </>
+    </QueryClientProvider>
   );
 } 
