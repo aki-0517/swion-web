@@ -19,16 +19,6 @@ const FOOTER_HEIGHT = 220; // フッターの高さ（必要に応じて調整�
 export default function LPPage() {
   // Projectロゴ取得用
   const [projectLogos, setProjectLogos] = useState<string[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth <= 768);
-    }
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   useEffect(() => {
     async function fetchLogos() {
@@ -144,47 +134,51 @@ export default function LPPage() {
         }
       `}</style>
       {/* Suiロゴを全体に浮かせる */}
-      {!isMobile && <SuiFloatingLogos />}
+      <div className="hidden md:block">
+        <SuiFloatingLogos />
+      </div>
       {/* Hero Section */}
       <section className="relative flex flex-col items-center justify-center min-h-screen w-full flex-1 px-4 text-center bg-black/30 overflow-hidden">
         {/* Projectロゴをランダムに散りばめて浮かせる */}
-        {!isMobile && projectLogos.map((logo, i) => {
-          // 中央エリアを避けてランダムな位置を生成
-          function getRandomPosition() {
-            let left, top;
-            while (true) {
-              left = Math.random() * 80 + 10; // 10%~90%
-              top = Math.random() * 70 + 10;  // 10%~80%
-              // 中央エリア(35%~65%)を避ける
-              if (!(left > 35 && left < 65 && top > 35 && top < 65)) {
-                break;
+        <div className="hidden md:block">
+          {projectLogos.map((logo, i) => {
+            // 中央エリアを避けてランダムな位置を生成
+            function getRandomPosition() {
+              let left, top;
+              while (true) {
+                left = Math.random() * 80 + 10; // 10%~90%
+                top = Math.random() * 70 + 10;  // 10%~80%
+                // 中央エリア(35%~65%)を避ける
+                if (!(left > 35 && left < 65 && top > 35 && top < 65)) {
+                  break;
+                }
               }
+              return { left, top };
             }
-            return { left, top };
-          }
-          const { left, top } = getRandomPosition();
-          const duration = Math.random() * 6 + 4; // 4~10秒
-          const size = Math.random() * 40 + 40; // 40~80px
-          return (
-            <Image
-              key={logo + i}
-              src={logo}
-              alt="Project Logo"
-              width={size}
-              height={size}
-              style={{
-                position: 'absolute',
-                left: `${left}%`,
-                top: `${top}%`,
-                opacity: 0.7,
-                pointerEvents: 'none',
-                animation: `floatY${i} ${duration}s ease-in-out infinite alternate`,
-                zIndex: 2,
-              }}
-              className="rounded-full"
-            />
-          );
-        })}
+            const { left, top } = getRandomPosition();
+            const duration = Math.random() * 6 + 4; // 4~10秒
+            const size = Math.random() * 40 + 40; // 40~80px
+            return (
+              <Image
+                key={logo + i}
+                src={logo}
+                alt="Project Logo"
+                width={size}
+                height={size}
+                style={{
+                  position: 'absolute',
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  opacity: 0.7,
+                  pointerEvents: 'none',
+                  animation: `floatY${i} ${duration}s ease-in-out infinite alternate`,
+                  zIndex: 2,
+                }}
+                className="rounded-full"
+              />
+            );
+          })}
+        </div>
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-white drop-shadow-lg z-10 tracking-widest" style={{ fontFamily: DOT_FONT, letterSpacing: '0.08em', textShadow: '0 4px 16px #000, 0 0 8px #00b8ff, 0 2px 0 #000' }}>SWION</h1>
         <h2 className="text-lg md:text-xl font-bold mb-6 text-white z-10 tracking-widest" style={{ fontFamily: DOT_FONT, textShadow: '0 4px 16px #000, 0 0 8px #00b8ff, 0 2px 0 #000' }}>Your Sui Acrivity, Your Aquarium</h2>
         <p className="text-base md:text-lg mb-8 text-white z-10 tracking-widest" style={{ fontFamily: DOT_FONT, textShadow: '0 4px 16px #000, 0 0 8px #00b8ff, 0 2px 0 #000' }}>See your onchain activity as a living, growing aquarium.</p>
