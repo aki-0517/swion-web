@@ -18,6 +18,16 @@ const FOOTER_HEIGHT = 220; // フッターの高さ（必要に応じて調整�
 export default function LPPage() {
   // Projectロゴ取得用
   const [projectLogos, setProjectLogos] = useState<string[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth <= 768);
+    }
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     async function fetchLogos() {
@@ -96,32 +106,48 @@ export default function LPPage() {
   }
 
   return (
-    <div
-      className={`min-h-screen w-full flex flex-col relative overflow-x-hidden ${pressStart2P.className}`}
-      style={{
-        backgroundImage: 'url(https://embed.pixiv.net/artwork.php?illust_id=116659447&mdate=1709654598)',
-        backgroundPosition: 'right top',
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-      }}
-    >
+    <>
+      {/* 固定背景画像 */}
+      <div
+        className="lp-bg-fixed"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 0,
+          backgroundImage: 'url(https://embed.pixiv.net/artwork.php?illust_id=116659447&mdate=1709654598)',
+          backgroundPosition: 'right top',
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        className={`min-h-screen w-full flex flex-col relative overflow-x-hidden ${pressStart2P.className}`}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
       {/* スマホ用の背景繰り返しCSSを追加 */}
       <style jsx global>{`
         @media (max-width: 768px) {
           .min-h-screen.w-full.flex.flex-col.relative.overflow-x-hidden.${pressStart2P.className.replace(/ /g, ".")} {
-            background-repeat: repeat !important;
-            background-attachment: scroll !important;
+            background-attachment: fixed !important;
+            background-position: right top !important;
+            background-repeat: no-repeat !important;
             background-size: cover !important;
           }
         }
       `}</style>
       {/* Suiロゴを全体に浮かせる */}
-      <SuiFloatingLogos />
+      {!isMobile && <SuiFloatingLogos />}
       {/* Hero Section */}
       <section className="relative flex flex-col items-center justify-center min-h-screen w-full flex-1 px-4 text-center bg-black/30 overflow-hidden">
         {/* Projectロゴをランダムに散りばめて浮かせる */}
-        {projectLogos.map((logo, i) => {
+        {!isMobile && projectLogos.map((logo, i) => {
           // 中央エリアを避けてランダムな位置を生成
           function getRandomPosition() {
             let left, top;
@@ -320,6 +346,7 @@ export default function LPPage() {
         </div>
         <div className="text-sm md:text-base text-gray-600 font-semibold">© 2025 SWION.</div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 } 
