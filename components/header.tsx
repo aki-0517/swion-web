@@ -41,7 +41,7 @@ export default function Header({ onWalletSearch }: HeaderProps) {
     network: 'testnet',
   });
 
-  const ADDRESS = "0x091e92c20ac460ac5d539c110d191cc26dfdc51f5c6bdbc219eaaf150df4047b"
+  const ADDRESS = "swion-test.sui"
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(ADDRESS)
@@ -226,22 +226,22 @@ export default function Header({ onWalletSearch }: HeaderProps) {
             {/* 英語バルーン: ウォレット未接続時のみ、検索バーの下に表示 */}
             {!account && (
               <div
-                className="absolute left-1/2 top-full -translate-x-1/2 mt-2 z-20"
+                className="absolute left-1/2 top-full -translate-x-1/2 mt-2 z-20 flex justify-center w-full"
                 style={{ pointerEvents: 'none', animation: 'floatY 3s ease-in-out infinite' }}
               >
-                <div className="relative bg-white/90 text-black text-xs px-4 py-2 rounded-xl shadow-lg border border-stone-300 max-w-xs text-center">
-                  <span style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '11px' }}>
+                <div className="relative bg-white/90 text-black text-sm px-2 py-1 rounded-xl shadow-lg border border-stone-300 max-w-xs text-center flex flex-col items-center justify-center" style={{ minWidth: '180px' }}>
+                  <span style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
                     Try searching for:<br />
                     <button
                       type="button"
                       onClick={handleCopy}
                       className={`underline text-blue-600 hover:text-blue-800 transition-colors duration-150 px-1 py-0.5 rounded ${copied ? 'bg-green-100' : ''}`}
-                      style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none', pointerEvents: 'auto' }}
+                      style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none', pointerEvents: 'auto', textAlign: 'center' }}
                     >
                       {ADDRESS}
                     </button>
                   </span>
-                  <span className="ml-2 text-green-600 text-[10px] font-bold" style={{visibility: copied ? 'visible' : 'hidden'}}>
+                  <span className="ml-2 text-green-600 text-xs font-bold" style={{visibility: copied ? 'visible' : 'hidden'}}>
                     Copied!
                   </span>
                   <span className="absolute left-1/2 -top-2 -translate-x-1/2 w-4 h-4 bg-white/90 border-l border-t border-stone-300 rotate-45"></span>
@@ -336,22 +336,22 @@ export default function Header({ onWalletSearch }: HeaderProps) {
               {/* 英語バルーン: ウォレット未接続時のみ、検索バーの下に表示 */}
               {!account && (
                 <div
-                  className="absolute left-1/2 top-full -translate-x-1/2 mt-2 z-20"
+                  className="absolute left-1/2 top-full -translate-x-1/2 mt-2 z-20 flex justify-center w-full"
                   style={{ pointerEvents: 'none', animation: 'floatY 3s ease-in-out infinite' }}
                 >
-                  <div className="relative bg-white/90 text-black text-xs px-4 py-2 rounded-xl shadow-lg border border-stone-300 max-w-xs text-center">
-                    <span style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '11px' }}>
+                  <div className="relative bg-white/90 text-black text-sm px-2 py-1 rounded-xl shadow-lg border border-stone-300 max-w-xs text-center flex flex-col items-center justify-center" style={{ minWidth: '180px' }}>
+                    <span style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
                       Try searching for:<br />
                       <button
                         type="button"
                         onClick={handleCopy}
                         className={`underline text-blue-600 hover:text-blue-800 transition-colors duration-150 px-1 py-0.5 rounded ${copied ? 'bg-green-100' : ''}`}
-                        style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none', pointerEvents: 'auto' }}
+                        style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', border: 'none', outline: 'none', pointerEvents: 'auto', textAlign: 'center' }}
                       >
                         {ADDRESS}
                       </button>
                     </span>
-                    <span className="ml-2 text-green-600 text-[10px] font-bold" style={{visibility: copied ? 'visible' : 'hidden'}}>
+                    <span className="ml-2 text-green-600 text-xs font-bold" style={{visibility: copied ? 'visible' : 'hidden'}}>
                       Copied!
                     </span>
                     <span className="absolute left-1/2 -top-2 -translate-x-1/2 w-4 h-4 bg-white/90 border-l border-t border-stone-300 rotate-45"></span>
