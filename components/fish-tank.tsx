@@ -8,6 +8,7 @@ import { Save, TrendingUp, RefreshCw } from "lucide-react"
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from "@mysten/dapp-kit"
 import { Transaction } from "@mysten/sui/transactions"
 import { SuiObjectData } from "@mysten/sui/client"
+import html2canvas from "html2canvas"
 
 interface FishTankProps {
   walletAddress: string
@@ -51,7 +52,9 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
     "https://mcgkbbmxetaclxnkgvaq.supabase.co/storage/v1/object/public/suiden//ChatGPT%20Image%20Apr%205,%202025,%2001_31_08%20PM.png"
   ]
 
-  // 背景アニメーション用のエフェクト
+  const tankRef = useRef<HTMLDivElement>(null)
+
+  // Background animation effect
   useEffect(() => {
     let intervalId: NodeJS.Timeout
     
@@ -732,6 +735,29 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
   const progressToNextRank = Math.min(100, ((txCount % 10) / 10) * 100)
   const txToNextRank = 10 - (txCount % 10)
 
+  // Tank画像をキャプチャしてダウンロードする関数
+  const handleDownloadTankImage = async () => {
+    if (!tankRef.current) return
+    try {
+      const canvas = await html2canvas(tankRef.current, {
+        useCORS: true,
+        backgroundColor: null,
+        scale: 2, // High resolution
+      })
+      const dataUrl = canvas.toDataURL("image/png")
+      const link = document.createElement("a")
+      link.href = dataUrl
+      link.download = "tank.png"
+      link.click()
+    } catch (e) {
+      toast({
+        title: "Image Save Error",
+        description: "Failed to save tank image.",
+        variant: "destructive",
+      })
+    }
+  }
+
   // If wallet is not connected and no wallet address is specified
   if (!currentAccount && !walletAddress) {
     return (
@@ -814,6 +840,7 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
 
             {/* タンクの内容部分 - 枠だけを表示するように変更 */}
             <div
+              ref={tankRef}
               className="fish-tank w-full h-[480px] relative rank-${tankRank} rounded-lg border-4 border-stone-400 shadow-lg overflow-hidden"
               style={{
                 backgroundImage: !isContentLoading && tankBackground ? `url(${tankBackground})` : undefined,
@@ -975,11 +1002,20 @@ export default function FishTank({ walletAddress, isOwner }: FishTankProps) {
               )}
             </div>
 
-            {isOwner && !isContentLoading && (
-              <div className="mt-2 text-xs text-gray-600">
-                {objects.length === 0
-                  ? "Drag objects from MyBox to place them in the tank"
-                  : "Drag placed objects to change their position"}
+            {isOwner && !isContentLoading && walletAddress && (
+              <div className="mt-2 flex flex-col items-start gap-2">
+                <button
+                  onClick={handleDownloadTankImage}
+                  className="game-button p-1 w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-500 border border-gray-300 rounded shadow-none"
+                  title="Download image"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
+                </button>
+                <div className="text-xs text-gray-600">
+                  {objects.length === 0
+                    ? "Drag objects from MyBox to place them in the tank"
+                    : "Drag placed objects to change their position"}
+                </div>
               </div>
             )}
 
